@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>卡片打印页</title>
+<link rel="stylesheet" href="lib/katex.min.css">
+<link rel="stylesheet" href="lib/hljs-github.css">
+<link rel="stylesheet" href="style.css">
+<style>
+  html,body{overflow:auto;height:auto;background:#fff;background-image:none}
+  .page{max-width:820px;margin:0 auto;padding:56px 40px 90px}
+  .page .reader-head{border-bottom:1px solid var(--line);padding-bottom:20px;margin-bottom:26px}
+  .page .reader-head h2{margin:0;font-size:29px;font-weight:700;letter-spacing:-.4px}
+  .page .reader-meta{margin-top:11px;display:flex;gap:9px;align-items:center;flex-wrap:wrap;font-size:12.5px;color:var(--ink-3)}
+  .page .cat-chip{display:inline-block;font-size:12px;font-weight:600;color:var(--brand-ink);background:var(--brand-soft);padding:4px 11px;border-radius:20px}
+  .page .md{font-size:16.4px;color:#22374a}
+  .toolbar-top{
+    position:fixed;right:22px;top:18px;z-index:9;display:flex;gap:9px;
+  }
+  .toolbar-top button{
+    height:38px;padding:0 16px;border-radius:12px;font-size:13.5px;font-weight:600;color:#fff;
+    background:linear-gradient(135deg,var(--brand-2),var(--brand));box-shadow:0 8px 18px rgba(18,184,166,.3);
+  }
+  .toolbar-top button.ghost{background:#fff;color:var(--ink-2);box-shadow:var(--sh-1)}
+  .md h2 .sec-arrow,.md h3 .sec-arrow{display:none}
+  .md h2.collapsible{padding-left:14px}
+  @media print{
+    .toolbar-top{display:none}
+    .page{padding:0;max-width:none}
+    body{background:#fff}
+    .md pre,.md table,.md blockquote{break-inside:avoid}
+    .md h2,.md h3{break-after:avoid}
+  }
+</style>
+</head>
+<body>
+<div class="toolbar-top">
+  <button onclick="window.print()">打印 / 存成 PDF</button>
+  <button class="ghost" onclick="window.close()">关闭</button>
+</div>
+<div class="page">
+  <header class="reader-head">
+    <h2 id="title">加载中…</h2>
+    <div class="reader-meta" id="meta"></div>
+  </header>
+  <div class="md" id="body"></div>
+</div>
+
+<script src="lib/marked.min.js"></script>
+<script src="lib/katex.min.js"></script>
+<script src="lib/auto-render.min.js"></script>
+<script src="lib/highlight.min.js"></script>
+<script src="render.js"></script>
+<script>
+(function () {
+  var id = new URLSearchParams(location.search).get('id') || '';
+  fetch('/api/card?id=' + encodeURIComponent(id)).then(function (r) { return r.json(); }).then(function (card) {
+    if (card.error) { document.getElementById('title').textContent = card.error; return; }
+    document.title = card.title + ' · 卡片笔记';
+    document.getElementById('title').textContent = card.title;
+    var w = NoteRender.countWords(card.content);
+    var meta = ['<span class="cat-chip">' + NoteRender.escapeHtml(card.cat || '未分类') + '</span>',
+      '<span>创建于 ' + NoteRender.escapeHtml(card.created || '') + '</span>',
+      '<span>最后修改 ' + NoteRender.escapeHtml(card.updated || '') + '</span>',
+      '<span>' + w.total + ' 字</span>'];
+    (card.tags || []).forEach(function (t) { meta.push('<span class="tag">' + NoteRender.escapeHtml(t) + '</span>'); });
+    document.getElementById('meta').innerHTML = meta.join('');
+    NoteRender.renderMarkdown(card.content, document.getElementById('body'), { basePath: card.cat, collapsible: false });
+    document.title = card.title;
+  }).catch(function (e) {
+    document.getElementById('title').textContent = '加载失败：' + e.message;
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>卡片笔记</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#12b8a6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="卡片笔记">
+<link rel="apple-touch-icon" href="icon-180.png">
+<!-- 用相对路径，这样放在 GitHub Pages 子目录下也能正常加载 -->
+<link rel="stylesheet" href="lib/katex.min.css">
+<link rel="stylesheet" href="lib/hljs-github.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<svg style="display:none" aria-hidden="true">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4l10-10a2.8 2.8 0 0 0-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/><path d="M10 11v6M14 11v6"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.7 5.5 6 .9-4.35 4.2 1.05 6-5.4-2.85L6.6 20.1l1.05-6L3.3 9.9l6-.9z"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/></symbol>
+  <symbol id="i-expand" viewBox="0 0 24 24"><path d="M8 10l4-4 4 4M8 14l4 4 4-4"/></symbol>
+  <symbol id="i-text" viewBox="0 0 24 24"><path d="M5 6h14M12 6v13"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.6"/><rect x="13" y="4" width="7" height="7" rx="1.6"/><rect x="4" y="13" width="7" height="7" rx="1.6"/><rect x="13" y="13" width="7" height="7" rx="1.6"/></symbol>
+  <symbol id="i-lines" viewBox="0 0 24 24"><path d="M4 6h16M4 11h16M4 16h10"/></symbol>
+  <symbol id="i-table" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M9 10v9"/></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24"><path d="M9 8l-4 4 4 4M15 8l4 4-4 4"/></symbol>
+  <symbol id="i-quote" viewBox="0 0 24 24"><path d="M7 7h4v4a4 4 0 0 1-4 4zM14 7h4v4a4 4 0 0 1-4 4z"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 7h12M8 12h12M8 17h12"/><circle cx="4.5" cy="7" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="17" r="1.2"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></symbol>
+  <symbol id="i-sigma" viewBox="0 0 24 24"><path d="M18 5H7l6 7-6 7h11"/></symbol>
+  <symbol id="i-bold" viewBox="0 0 24 24"><path d="M8 5h5a3.5 3.5 0 0 1 0 7H8zM8 12h6a3.5 3.5 0 0 1 0 7H8z"/></symbol>
+  <symbol id="i-dots" viewBox="0 0 24 24"><circle cx="12" cy="5.5" r="1.7" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="12" cy="18.5" r="1.7" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-move" viewBox="0 0 24 24"><path d="M4 8h11l-3-3M20 16H9l3 3"/></symbol>
+  <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18h9a4 4 0 0 0 .6-8A5.5 5.5 0 0 0 6 9.5 3.5 3.5 0 0 0 7 18z"/><path d="M12 12v6M9.5 14.5L12 12l2.5 2.5"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 3.5v2.2M12 18.3v2.2M4.9 7.8l1.9 1.1M17.2 15.1l1.9 1.1M4.9 16.2l1.9-1.1M17.2 8.9l1.9-1.1"/></symbol>
+</svg>
+
+<div class="app" id="app">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark">卡</div>
+      <div class="brand-text">
+        <b>卡片笔记</b>
+        <span id="brandSub">正在连接…</span>
+      </div>
+      <button class="icon-btn only-mobile" id="btnCloseSide" title="收起"><svg><use href="#i-close"/></svg></button>
+    </div>
+
+    <button class="new-card-btn" id="btnNewSide">
+      <svg><use href="#i-plus"/></svg><span>新建卡片</span>
+    </button>
+
+    <div class="side-scroll">
+      <div class="side-label">我的课程</div>
+      <nav class="cat-list" id="catList"></nav>
+      <button class="side-add" id="btnNewCat"><svg><use href="#i-plus"/></svg><span>新建类别</span></button>
+      <div class="side-foot">
+        <button class="side-foot-btn" id="btnSync"><svg><use href="#i-cloud"/></svg><span id="syncLabel">同步</span></button>
+        <button class="side-foot-btn" id="btnSettings"><svg><use href="#i-gear"/></svg><span>云同步设置</span></button>
+        <button class="side-foot-btn" id="btnReveal"><svg><use href="#i-folder"/></svg><span>打开笔记文件夹</span></button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <button class="icon-btn only-mobile" id="btnOpenSide"><svg><use href="#i-menu"/></svg></button>
+      <div class="topbar-title">
+        <h1 id="boardTitle">全部卡片</h1>
+        <p id="boardSub">正在加载…</p>
+      </div>
+      <div class="search-wrap">
+        <svg class="search-ico"><use href="#i-search"/></svg>
+        <input id="searchInput" type="search" placeholder="搜索标题、正文、标签…" autocomplete="off" spellcheck="false">
+        <button class="search-clear" id="btnClearSearch" hidden><svg><use href="#i-close"/></svg></button>
+      </div>
+      <div class="topbar-actions">
+        <button class="icon-btn" id="btnRefresh" title="重新读取文件夹"><svg><use href="#i-refresh"/></svg></button>
+        <div class="seg" id="viewSeg">
+          <button data-view="grid" class="on" title="网格视图"><svg><use href="#i-grid"/></svg></button>
+          <button data-view="list" title="列表视图"><svg><use href="#i-lines"/></svg></button>
+        </div>
+        <button class="primary-btn" id="btnNew"><svg><use href="#i-plus"/></svg><span>新建卡片</span></button>
+      </div>
+    </header>
+
+    <div class="board-tools">
+      <div class="sort-wrap">
+        <label>排序</label>
+        <select id="sortSel">
+          <option value="updated">最近修改</option>
+          <option value="created">创建时间</option>
+          <option value="title">标题</option>
+          <option value="pinned">置顶优先</option>
+        </select>
+      </div>
+      <button class="mini-btn" id="btnSelectMode" title="勾选多张卡片，一起移动或复制到别的类别">批量整理</button>
+      <div class="density-wrap" id="densityWrap" title="调节卡片大小：紧凑 → 小 → 中 → 大 → 特大 → 单列全宽">
+        <button class="dens-btn" id="densMinus" title="卡片小一点">−</button>
+        <span class="dens-label" id="densLabel">中</span>
+        <button class="dens-btn" id="densPlus" title="卡片大一点">+</button>
+      </div>
+      <div class="tools-right" id="toolsRight"></div>
+    </div>
+
+    <section class="board" id="board"></section>
+    <div class="board-pad"></div>
+  </main>
+</div>
+
+<!-- ============ 阅读浮层 ============ -->
+<div class="reader" id="reader" hidden>
+  <div class="reader-backdrop" id="readerBackdrop"></div>
+  <article class="reader-panel" id="readerPanel" role="dialog" aria-modal="true">
+    <div class="reader-bar">
+      <div class="reader-bar-left">
+        <span class="cat-chip" id="readerCat">—</span>
+      </div>
+      <div class="reader-bar-right">
+        <button class="size-btn" id="btnReaderSize" title="切换阅读区大小：舒适 / 宽 / 全屏（快捷键 F）"><span>舒适</span></button>
+        <button class="icon-btn sm" id="btnFontDown" title="缩小字号"><span class="fs-txt">A-</span></button>
+        <button class="icon-btn sm" id="btnFontUp" title="放大字号"><span class="fs-txt">A+</span></button>
+        <button class="icon-btn sm" id="btnFoldAll" title="全部小节收起/展开"><svg><use href="#i-expand"/></svg></button>
+        <button class="icon-btn sm" id="btnEdit" title="编辑这张卡片"><svg><use href="#i-edit"/></svg></button>
+        <button class="icon-btn sm" id="btnReaderClose" title="关闭 (Esc)"><svg><use href="#i-close"/></svg></button>
+      </div>
+    </div>
+    <div class="reader-scroll" id="readerScroll">
+      <div class="reader-inner" id="readerInner">
+        <header class="reader-head">
+          <h2 id="readerTitle">—</h2>
+          <div class="reader-meta" id="readerMeta"></div>
+        </header>
+        <div class="md" id="readerBody"></div>
+        <footer class="reader-foot" id="readerFoot"></footer>
+      </div>
+    </div>
+  </article>
+</div>
+
+<!-- ============ 图片查看 ============ -->
+<div class="lightbox" id="lightbox" hidden><img id="lightboxImg" alt=""></div>
+
+<!-- ============ 编辑弹窗 ============ -->
+<div class="modal" id="modal" hidden>
+  <div class="modal-backdrop" id="modalBackdrop"></div>
+  <div class="modal-panel" id="modalPanel" role="dialog" aria-modal="true">
+    <header class="modal-head">
+      <h3 id="modalTitle">新建卡片</h3>
+      <button class="import-btn" id="btnImportMd" title="选择一个 .md 文件，自动解析成卡片">
+        <svg><use href="#i-folder"/></svg><span>导入 .md 文件</span>
+      </button>
+      <button class="icon-btn" id="btnModalClose"><svg><use href="#i-close"/></svg></button>
+    </header>
+
+    <div class="modal-body">
+      <input class="title-input" id="fTitle" placeholder="给这张卡片起个标题，例如：传递函数的物理意义" autocomplete="off">
+      <div class="field-row">
+        <label class="field">
+          <span>所属类别</span>
+          <input id="fCat" list="catOptions" placeholder="选择或输入新类别，如：自动控制原理" autocomplete="off">
+          <datalist id="catOptions"></datalist>
+        </label>
+        <label class="field">
+          <span>标签（英文逗号分隔）</span>
+          <input id="fTags" placeholder="传递函数, 时域分析" autocomplete="off">
+        </label>
+      </div>
+
+      <div class="editor">
+        <div class="editor-toolbar" id="toolbar">
+          <button data-md="h2" title="二级标题"><b>H2</b></button>
+          <button data-md="bold" title="加粗"><svg><use href="#i-bold"/></svg></button>
+          <button data-md="ul" title="无序列表"><svg><use href="#i-list"/></svg></button>
+          <button data-md="todo" title="待办清单"><svg><use href="#i-check"/></svg></button>
+          <button data-md="quote" title="引用"><svg><use href="#i-quote"/></svg></button>
+          <button data-md="inlineMath" title="行内公式"><svg><use href="#i-sigma"/></svg></button>
+          <button data-md="blockMath" title="独立公式块"><span class="tex">$$</span></button>
+          <button data-md="code" title="代码块"><svg><use href="#i-code"/></svg></button>
+          <button data-md="table" title="表格"><svg><use href="#i-table"/></svg></button>
+          <span class="toolbar-sep"></span>
+          <button class="wide" id="btnPreview" title="显示/隐藏预览">预览</button>
+          <span class="toolbar-hint">可直接 <b>Ctrl+V</b> 粘贴截图</span>
+        </div>
+        <div class="editor-split" id="editorSplit">
+          <textarea id="fBody" spellcheck="false" placeholder="在这里写内容，支持 Markdown：
+## 一句话理解
+……
+
+公式写法：行内 $G(s)=\frac{K}{Ts+1}$，独立成行用 $$...$$"></textarea>
+          <div class="editor-preview md" id="previewPane" hidden></div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="modal-foot">
+      <div class="foot-left">
+        <label class="pin-check"><input type="checkbox" id="fPinned"><span>置顶</span></label>
+        <span class="foot-tip" id="footTip">Ctrl+S 保存 · Ctrl+Enter 保存 · Esc 取消</span>
+      </div>
+      <div class="foot-right">
+        <button class="ghost-btn" id="btnCancel">取消</button>
+        <button class="primary-btn" id="btnSave"><svg><use href="#i-check"/></svg><span>保存卡片</span></button>
+      </div>
+    </footer>
+  </div>
+</div>
+
+<!-- ============ 云同步设置 ============ -->
+<div class="modal" id="settings" hidden>
+  <div class="modal-backdrop" id="settingsBackdrop"></div>
+  <div class="modal-panel settings-panel" role="dialog" aria-modal="true">
+    <header class="modal-head">
+      <h3>云同步设置</h3>
+      <button class="icon-btn" id="btnSettingsClose"><svg><use href="#i-close"/></svg></button>
+    </header>
+    <div class="modal-body settings-body">
+      <p class="settings-tip">
+        笔记会存到你自己的 <b>Gitee 私有仓库</b>里（就是普通的 .md 文件）。<br>
+        换设备时，各设备本地都有一份完整数据，打开软件时自动与云端对齐。
+      </p>
+      <div class="field-row">
+        <label class="field">
+          <span>Gitee 用户名</span>
+          <input id="sOwner" placeholder="例如 tangoon" autocomplete="off" spellcheck="false">
+        </label>
+        <label class="field">
+          <span>仓库名</span>
+          <input id="sRepo" placeholder="例如 card-notes" autocomplete="off" spellcheck="false">
+        </label>
+      </div>
+      <div class="field-row">
+        <label class="field">
+          <span>分支</span>
+          <input id="sBranch" placeholder="master" autocomplete="off" spellcheck="false">
+        </label>
+        <label class="field">
+          <span>私人令牌（只勾 projects 的那个）</span>
+          <input id="sToken" type="password" placeholder="粘贴令牌" autocomplete="off" spellcheck="false">
+        </label>
+      </div>
+      <div class="settings-row">
+        <button class="ghost-btn sm" id="btnTestConn">测试连接</button>
+        <button class="ghost-btn sm" id="btnCreateRepo">创建仓库并上传</button>
+      </div>
+      <div class="settings-status" id="settingsStatus"></div>
+    </div>
+    <footer class="modal-foot">
+      <div class="foot-left"><span class="foot-tip" id="syncInfo"></span></div>
+      <div class="foot-right">
+        <span class="ver-tip" id="verTip"></span>
+        <button class="ghost-btn" id="btnSettingsCancel">取消</button>
+        <button class="primary-btn" id="btnSettingsSave"><svg><use href="#i-check"/></svg><span>保存</span></button>
+      </div>
+    </footer>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+<input type="file" id="filePick" accept="image/*" hidden multiple>
+<input type="file" id="mdPick" accept=".md,.markdown,.txt,text/markdown,text/plain" hidden multiple>
+
+<!-- ============ 选择目标类别 ============ -->
+<div class="picker" id="picker" hidden>
+  <div class="picker-backdrop" id="pickerBackdrop"></div>
+  <div class="picker-panel" role="dialog" aria-modal="true">
+    <h3 id="pickerTitle">移动到…</h3>
+    <p class="picker-sub" id="pickerSub"></p>
+    <div class="picker-list" id="pickerList"></div>
+    <div class="picker-new">
+      <input id="pickerNew" placeholder="或者输入一个新类别名，回车即可" autocomplete="off">
+      <button class="primary-btn" id="pickerNewBtn">新建并放入</button>
+    </div>
+    <div class="picker-foot">
+      <button class="ghost-btn" id="pickerCancel">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 多选操作条 ============ -->
+<div class="selbar" id="selbar" hidden>
+  <span class="selbar-count" id="selCount">已选 0 张</span>
+  <span class="selbar-sep"></span>
+  <button class="selbar-btn" id="selAll">全选</button>
+  <button class="selbar-btn" id="selMove">移动到…</button>
+  <button class="selbar-btn" id="selCopy">复制到…</button>
+  <button class="selbar-btn danger" id="selDelete">删除</button>
+  <button class="selbar-btn ghost" id="selClear">取消</button>
+</div>
+
+<!-- 拖拽 .md 到卡片墙时的提示层 -->
+<div class="dropzone" id="dropzone" hidden>
+  <div class="dropzone-box">
+    <svg><use href="#i-folder"/></svg>
+    <b>松手就导入</b>
+    <span id="dropzoneHint">把 .md 文件拖进来，自动解析成卡片</span>
+  </div>
+</div>
+
+<script src="lib/marked.min.js"></script>
+<script src="lib/katex.min.js"></script>
+<script src="lib/auto-render.min.js"></script>
+<script src="lib/highlight.min.js"></script>
+<script src="render.js"></script>
+<script src="store-local.js"></script>
+<script src="sync-gitee.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
