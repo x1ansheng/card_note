@@ -37,6 +37,12 @@
   --sidebar-w:250px;
   --font: "PingFang SC","HarmonyOS Sans SC","Microsoft YaHei UI","Microsoft YaHei",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --mono: "JetBrains Mono","Cascadia Mono",Consolas,"SF Mono",Menlo,monospace;
+
+  /* 安全区：刘海屏 / 手势条的避让距离。没有安全区的设备取 0，不影响桌面 */
+  --sat:env(safe-area-inset-top,0px);
+  --sab:env(safe-area-inset-bottom,0px);
+  --sal:env(safe-area-inset-left,0px);
+  --sar:env(safe-area-inset-right,0px);
 }
 
 *{box-sizing:border-box}
@@ -137,6 +143,9 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .side-foot-btn:hover{background:rgba(0,0,0,.045);color:var(--ink-2)}
 .side-foot-btn svg{width:16px;height:16px}
 
+/* 手机端抽屉侧栏的遮罩：桌面档不显示（侧栏本来就在页面上） */
+.side-backdrop{display:none}
+
 /* ---------------- 主区 ---------------- */
 .main{flex:1;min-width:0;display:flex;flex-direction:column;height:100%}
 .topbar{
@@ -216,10 +225,14 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .board{
   flex:1;min-height:0;overflow:auto;padding:0 28px 8px;
   scroll-behavior:smooth;
+  /* 手机/Pad 上滚到顶再往下拉时，别把浏览器的"下拉刷新"带出来（会把应用刷掉重载） */
+  overscroll-behavior:contain;
 }
 .board.grid{
   display:grid;gap:16px;
-  grid-template-columns:repeat(auto-fill,minmax(288px,1fr));
+  /* 列宽用变量 --card-min 控制：桌面 288px，平板调小、手机上直接 100%（单列）。
+     各密度档只改这个变量，不用重复写 grid-template-columns，适配时更好改。 */
+  grid-template-columns:repeat(auto-fill,minmax(var(--card-min,288px),1fr));
   /* 关键：卡片有 overflow:hidden，auto 行轨道会取「最小贡献」(=0)，
      在窄屏/高度不够时整行会被压扁成只剩内边距。写成 max-content 才是
      「每行按内容需要的高度」，同时保留同一行卡片等高。 */
@@ -301,7 +314,7 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .card.selected .sel-badge{display:grid}
 
 /* ---------- 卡片大小（6 档）：字号 / 行数 / 留白 一起跟着变，避免内容与卡片不匹配 ---------- */
-.board.d-xs{grid-template-columns:repeat(auto-fill,minmax(224px,1fr));gap:12px}
+.board.d-xs{--card-min:224px;gap:12px}
 .board.d-xs .card{padding:14px 15px 12px 18px;border-radius:16px}
 .board.d-xs .card-top{margin-bottom:6px;min-height:18px}
 .board.d-xs .card-title{font-size:15.4px;margin-bottom:6px}
@@ -310,18 +323,18 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .board.d-xs .tag{font-size:10.5px;padding:1.5px 7px}
 .board.d-xs .card-cat{font-size:11px;padding:2px 8px}
 
-.board.d-s{grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:14px}
+.board.d-s{--card-min:268px;gap:14px}
 .board.d-s .card{padding:15px 16px 13px 19px}
 .board.d-s .card-title{font-size:16.4px}
 .board.d-s .card-sum{font-size:13.1px;-webkit-line-clamp:3}
 
-.board.d-l{grid-template-columns:repeat(auto-fill,minmax(392px,1fr));gap:18px}
+.board.d-l{--card-min:392px;gap:18px}
 .board.d-l .card{padding:20px 22px 16px 24px;border-radius:22px}
 .board.d-l .card-title{font-size:19.6px}
 .board.d-l .card-sum{font-size:14.6px;line-height:1.86;-webkit-line-clamp:5}
 .board.d-l .tag{font-size:11.5px}
 
-.board.d-xl{grid-template-columns:repeat(auto-fill,minmax(520px,1fr));gap:20px}
+.board.d-xl{--card-min:520px;gap:20px}
 .board.d-xl .card{padding:24px 28px 18px 30px;border-radius:24px}
 .board.d-xl .card-title{font-size:22px;margin-bottom:10px}
 .board.d-xl .card-sum{font-size:15.6px;line-height:1.9;-webkit-line-clamp:7}
@@ -380,7 +393,10 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 }
 .reader.open .reader-backdrop{opacity:1}
 .reader-panel{
-  position:relative;width:min(880px,calc(100vw - 56px));height:min(88vh,1000px);
+  position:relative;width:min(880px,calc(100vw - 56px));
+  /* 高度按内容收缩：卡片短的时候不会拖出一大片空白，长的顶到 max-height 再内部滚动。
+     min-height 只是防止特别短的卡片缩成一条。 */
+  height:auto;min-height:min(46vh,420px);max-height:min(88vh,1000px);
   background:var(--surface);border-radius:var(--r-xl);overflow:hidden;
   box-shadow:var(--sh-3);display:flex;flex-direction:column;
   will-change:transform,opacity;
@@ -405,7 +421,7 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .size-btn:hover{background:rgba(18,184,166,.11);color:var(--brand-ink)}
 
 /* 阅读区大小：舒适 / 宽 / 全屏 */
-.reader-panel.rs-1{width:min(1180px,calc(100vw - 44px));height:min(93vh,1400px)}
+.reader-panel.rs-1{width:min(1180px,calc(100vw - 44px));max-height:min(93vh,1400px)}
 .reader-panel.rs-1 .reader-inner{max-width:930px}
 .reader-panel.rs-2{width:100vw;height:100vh;border-radius:0;box-shadow:none}
 .reader-panel.rs-2 .reader-bar{padding:14px 26px 14px 32px}
@@ -467,9 +483,13 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .md ul,.md ol{margin:0 0 1.05em;padding-left:1.45em}
 .md li{margin:.28em 0}
 .md li::marker{color:var(--brand);font-weight:600}
-.md ul.task-list{list-style:none;padding-left:.15em}
-.md ul.task-list li{display:flex;gap:.55em;align-items:flex-start}
-.md input[type=checkbox]{accent-color:var(--brand);width:15px;height:15px;margin-top:.42em;flex:none}
+.md ul.task-list{list-style:none;padding-left:0}
+/* 待办条目用「绝对定位的勾选框」而不是 display:flex：
+   一旦 li 变成 flex 容器，条目里的行内公式（$e^{at}$ 那种，KaTeX 会渲染成一个 span）
+   就成了另一个 flex item，文字被拆成左右两列交错，窄屏上尤其难看。 */
+.md ul.task-list li{position:relative;padding-left:1.65em}
+.md ul.task-list>li>input[type=checkbox]{position:absolute;left:0;top:.42em;margin:0}
+.md input[type=checkbox]{accent-color:var(--brand);width:15px;height:15px;flex:none}
 .md blockquote{
   margin:1.15em 0;padding:.85em 1.1em;border-radius:var(--r-md);
   background:linear-gradient(90deg,rgba(18,184,166,.075),rgba(18,184,166,.02));
@@ -488,6 +508,10 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .md pre code{background:none;border:0;padding:0;font-size:13.2px;line-height:1.75;color:#243b4d;display:block}
 .md table{width:100%;border-collapse:separate;border-spacing:0;margin:1.2em 0;font-size:.94em;
   border:1px solid var(--line-2);border-radius:var(--r-md);overflow:hidden}
+/* 宽表格（四列以上）在手机/Pad 上放不下：让它在自己的小框里横向滚动，
+   而不是把整页撑宽、把正文挤成一条。render.js 会为每个 table 套上这层。 */
+.md .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:1.2em 0;max-width:100%}
+.md .table-wrap table{margin:0;width:max-content;min-width:100%}
 .md th{background:#f4f9fa;font-weight:650;text-align:left;color:#1f3547}
 .md th,.md td{padding:9px 14px;border-bottom:1px solid var(--line)}
 .md tr:last-child td{border-bottom:0}
@@ -635,6 +659,9 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .mini-btn.on{background:linear-gradient(135deg,var(--brand-2),var(--brand));color:#fff;
   box-shadow:0 6px 14px rgba(18,184,166,.28)}
 
+/* 卡片数量：桌面档不显示（顶栏副标题里已经有了），手机上才放进工具条 */
+.board-count{display:none;font-size:12.5px;color:var(--ink-3);white-space:nowrap}
+
 /* 卡片大小调节 */
 .density-wrap{display:flex;align-items:center;gap:1px;padding:2px;border-radius:11px;
   background:rgba(255,255,255,.86);box-shadow:var(--sh-1)}
@@ -730,39 +757,237 @@ body.local-mode #readerFoot [data-act="reveal"]{display:none!important}
 .searching-tip b{color:var(--brand-ink)}
 mark.hit{background:rgba(244,168,59,.28);color:inherit;border-radius:3px;padding:0 2px}
 
-/* ---------------- 响应式 ---------------- */
+/* ==================================================================
+   响应式（三档）
+   ------------------------------------------------------------------
+     ≥1081px  桌面：侧栏常驻 250 + 自适应多列
+     761–1080 平板：侧栏常驻收窄，卡片 2 列左右（iPad 竖屏 820 在这一档）
+     ≤760px   手机：侧栏抽屉、单列卡片、阅读页与编辑器全屏、触控热区加大
+   另外单独用 @media (hover:none) 处理"没有鼠标悬停"的设备：
+   触摸屏上 :hover 触发不了，靠 hover 才出现的按钮等于不存在。
+   ================================================================== */
 @media (max-width:1080px){
   .topbar-title{max-width:26%}
   .search-wrap{max-width:300px}
 }
-@media (max-width:860px){
+
+/* ---------------- 平板档：761–1080px ---------------- */
+@media (min-width:761px) and (max-width:1080px){
+  :root{--sidebar-w:214px}
+  .sidebar{padding:16px 10px 12px;gap:12px}
+  .brand{padding:2px 4px;gap:9px}
+  .brand-mark{width:34px;height:34px;border-radius:11px;font-size:16px}
+  .brand-text b{font-size:15.5px}
+  .new-card-btn{height:42px;font-size:14.5px}
+  .cat-item{padding:10px 9px;font-size:14px}
+  .side-foot-btn{padding:10px 9px}
+  .topbar{padding:14px 20px 8px;gap:12px}
+  .topbar-title{max-width:30%}
+  .topbar-title h1{font-size:20px}
+  .search-wrap{max-width:330px}
+  .board{padding:0 20px 8px}
+  .board-tools{padding:4px 20px 10px;gap:10px}
+  /* 卡片列宽按平板宽度重算：820 宽下能排两列，不再一张占满整屏 */
+  .board.grid{--card-min:250px}
+  .board.d-xs{--card-min:198px}
+  .board.d-s{--card-min:234px}
+  .board.d-l{--card-min:322px}
+  .board.d-xl{--card-min:412px}
+  .board.list{max-width:none}
+  .reader-panel{width:min(1000px,calc(100vw - 32px));max-height:min(94vh,1400px)}
+  .reader-panel.rs-1 .reader-inner{max-width:860px}
+  .reader-inner{max-width:820px}
+  .modal-panel{width:min(860px,100%)}
+}
+
+/* ---------------- 手机档：≤760px ---------------- */
+@media (max-width:760px){
   .only-mobile{display:grid}
+
+  /* —— 顶栏：第一行按钮 + 标题，第二行整行搜索；标题不再被挤成一竖条 —— */
+  .topbar{
+    gap:8px;flex-wrap:wrap;
+    padding:calc(8px + var(--sat,0px)) calc(12px + var(--sar,0px)) 8px calc(12px + var(--sal,0px));
+  }
+  .icon-btn{width:44px;height:44px;border-radius:13px}
+  .topbar-title{order:1;flex:1;min-width:0;max-width:none}
+  .topbar-title h1{font-size:17px}
+  .topbar-title p{display:none}                     /* 卡片数量挪到工具条，别占顶栏 */
+  .topbar-actions{order:2;gap:8px}
+  .topbar-actions .primary-btn{width:44px;height:44px;padding:0;justify-content:center;border-radius:13px}
+  .topbar-actions .primary-btn span{display:none}   /* 「新建卡片」只留 ＋，省出横向空间 */
+  .seg{padding:3px;border-radius:13px}
+  .seg button{width:40px;height:38px}
+  .search-wrap{order:3;flex-basis:100%;max-width:none;margin-left:0}
+  .search-wrap input{height:44px;font-size:15px}
+
+  /* —— 工具条：手机上不放"卡片大小"（单列下没意义），腾出位置显示卡片数量 —— */
+  .board-tools{
+    gap:10px;padding:2px 12px 10px;
+    overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;
+  }
+  .board-tools::-webkit-scrollbar{display:none}
+  .density-wrap{display:none}
+  .sort-wrap select{height:36px;font-size:13.5px}
+  .mini-btn{padding:8px 13px;font-size:13px}
+  .tools-right{font-size:12px;white-space:nowrap;margin-left:auto}
+  #boardCount{display:inline}                       /* 工具条右侧显示"N 张卡片" */
+
+  /* —— 卡片墙：一律单列，触摸设备上取消 hover 位移 —— */
+  .board{padding:0 12px 4px}
+  .board.grid{--card-min:100%;gap:11px}
+  .board.d-xs,.board.d-s,.board.d-l,.board.d-xl{--card-min:100%;gap:11px}
+  .card{padding:15px 16px 12px 18px;border-radius:16px}
+  .card:hover{transform:none;box-shadow:var(--sh-1)}
+  .card:active{transform:scale(.99)}
+  .card-more{opacity:1;right:6px;top:6px;width:38px;height:38px}
+  .card-more:hover{background:transparent}
+  .card-title{font-size:16.8px;margin-bottom:7px}
+  .card-open{display:none}                          /* "展开"是鼠标悬停提示，手机上没意义 */
+  .board-pad{height:calc(20px + var(--sab,0px))}
+
+  /* —— 侧栏抽屉：加遮罩，点遮罩关闭 —— */
   .sidebar{
     position:fixed;left:0;top:0;bottom:0;transform:translateX(-102%);
     transition:transform .3s var(--ease);box-shadow:var(--sh-3);
-    background:rgba(255,255,255,.97);width:272px;
+    background:rgba(255,255,255,.985);width:min(300px,84vw);z-index:60;
+    padding:calc(14px + var(--sat,0px)) 12px calc(12px + var(--sab,0px)) 12px;
   }
   .sidebar.open{transform:none}
-  .topbar{padding:12px 16px 8px;gap:10px;flex-wrap:wrap}
-  .topbar-title{max-width:none;flex:1;order:2}
-  .search-wrap{order:3;max-width:none;flex-basis:100%;margin-left:0}
-  .topbar-actions{order:1}
-  .board{padding:0 16px 8px}
-  .board.grid{grid-template-columns:minmax(0,1fr);gap:12px}
-  .board-tools{padding:4px 16px 10px}
-  .tools-right{display:none}
-  .reader-panel{width:calc(100vw - 20px);height:94vh;border-radius:20px}
-  .reader-panel.rs-2{width:100vw;height:100vh;border-radius:0}
-  .reader-panel.rs-2 .reader-inner{padding:22px 20px 70px}
-  .reader-panel.rs-1 .reader-inner{padding:22px 20px 60px}
-  .reader-inner{padding:22px 20px 60px}
-  .reader-head h2{font-size:22px}
-  .modal{padding:10px}
-  .modal-panel{height:95vh}
-  .modal-body{padding:0 16px 8px}
-  .modal-head,.modal-foot{padding-left:16px;padding-right:16px}
-  .foot-tip{display:none}
-  .editor-preview{display:none!important}
+  .side-backdrop{
+    display:block;position:fixed;inset:0;z-index:55;
+    background:rgba(20,36,52,.36);backdrop-filter:blur(2px);
+    opacity:0;pointer-events:none;transition:opacity .3s var(--ease);
+  }
+  body.side-open .side-backdrop{opacity:1;pointer-events:auto}
+  .cat-item{padding:12px;font-size:15px}
+  .cat-item:hover{background:transparent}
+  .cat-item.on:hover{background:linear-gradient(90deg,rgba(18,184,166,.15),rgba(18,184,166,.04))}
+  .cat-more{opacity:1;width:36px;height:36px}
+  .cat-more:hover{background:transparent}
+  .cat-more svg{width:17px;height:17px}
+  .side-add{padding:12px}
+  .side-foot-btn{padding:12px;font-size:13.5px}
+
+  /* —— 阅读页：手机上一律全屏（原本四周留 10px 边距，白占地方） —— */
+  /* 老安卓内核不认 dvh，先给一行 vh 兜底；认 dvh 的浏览器用下面那条覆盖。
+     注意要一起把基类的 min/max-height 清掉，否则会被 88vh 卡住、铺不满屏。 */
+  .reader-panel,
+  .reader-panel.rs-0,.reader-panel.rs-1,.reader-panel.rs-2{height:100vh;min-height:0;max-height:none}
+  .reader-panel,
+  .reader-panel.rs-0,.reader-panel.rs-1,.reader-panel.rs-2{
+    width:100vw;height:100dvh;border-radius:0;box-shadow:none;
+  }
+  .reader-bar{padding:calc(8px + var(--sat,0px)) 8px 8px 14px;gap:8px}
+  .reader-panel.rs-2 .reader-bar{padding:calc(8px + var(--sat,0px)) 8px 8px 14px}
+  .reader-bar .size-btn{display:none}               /* 手机上本来就全屏，不用切档 */
+  .icon-btn.sm{width:40px;height:40px;border-radius:12px}
+  .reader-inner,
+  .reader-panel.rs-1 .reader-inner,
+  .reader-panel.rs-2 .reader-inner{max-width:100%;padding:16px 16px calc(56px + var(--sab,0px))}
+  .reader-head{padding-bottom:15px;margin-bottom:18px}
+  .reader-head h2{font-size:21px;line-height:1.38}
+  .reader-panel.rs-2 .reader-head h2{font-size:21px}
+  .reader-meta{margin-top:9px;gap:7px;font-size:12px}
+  .reader-foot{
+    margin-top:26px;padding-top:14px;padding-bottom:2px;gap:8px;
+    flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;
+  }
+  .reader-foot::-webkit-scrollbar{display:none}
+  .reader-foot .ghost-btn{height:40px;padding:0 14px;flex:none}
+  .reader-foot .ghost-btn[data-act="delete"]{margin-left:0!important}
+  .md{--fs:16.2px;line-height:1.88}
+  .md h2{font-size:1.2em}
+  .md img{margin:1em auto}
+  .md .katex{font-size:1em}
+  .md .katex-display{margin:1em 0}
+
+  /* —— 编辑弹窗：手机上一律全屏，键盘弹出也不至于把输入框挤没 —— */
+  .modal{padding:0}
+  .modal-panel{width:100%;height:100vh}                 /* vh 兜底 */
+  .modal-panel{height:100dvh;border-radius:0;max-height:none}
+  .modal-head{padding:calc(10px + var(--sat,0px)) 12px 10px 16px;gap:8px}
+  .modal-head h3{font-size:16.5px}
+  .modal-head .icon-btn{width:42px;height:42px}
+  .import-btn{height:38px;padding:0 12px;font-size:13px;margin-right:4px}
+  .modal-body{padding:0 14px 6px;gap:10px}
+  .title-input{height:48px;font-size:19px}
+  .title-input::placeholder{font-size:15px}
+  .field-row{gap:10px}
+  .field-row>.field{min-width:0;flex-basis:100%}     /* 类别、标签各占一行，别挤成两列 */
+  .field input{height:44px;font-size:15px}
+  .editor-toolbar{padding:6px 8px;gap:3px}
+  .editor-toolbar button{min-width:40px;height:36px;padding:0 6px}
+  .editor-toolbar .wide{padding:0 14px}
+  .toolbar-hint{display:none}                        /* "Ctrl+V 粘贴截图"手机上没意义 */
+  .editor-split{flex-direction:column}
+  .editor-split textarea{padding:14px;font-size:14px;line-height:1.75}
+  /* 预览改成上下分栏（原来在窄屏被整块藏掉，点了"预览"没反应） */
+  .editor-preview{display:block;border-left:0;border-top:1px solid var(--line);max-height:44%;padding:14px}
+  .editor-preview[hidden]{display:none!important}
+  .modal-foot{padding:10px 14px calc(12px + var(--sab,0px));gap:10px;flex-wrap:nowrap}
+  .foot-tip{display:none}                            /* "Ctrl+S 保存 · Esc 取消"手机上没意义，别占地方把按钮挤扁 */
+  .foot-left{gap:10px;flex:0 0 auto}
+  .foot-right{margin-left:auto;gap:8px}
+  .pin-check{font-size:14px}
+  .pin-check input{width:18px;height:18px}
+  .modal-foot .ghost-btn,.modal-foot .primary-btn{height:44px;padding:0 18px}
+
+  /* —— 类别选择弹窗：贴底弹出，像系统底部弹窗一样好点 —— */
+  .picker{padding:0;align-items:flex-end}
+  .picker-panel{
+    width:100%;max-height:84dvh;border-radius:22px 22px 0 0;
+    padding:20px 16px calc(14px + var(--sab,0px));
+  }
+  .picker-item{padding:14px 12px;font-size:15px}
+  .picker-new input{height:46px;font-size:15px}
+  .picker-new .primary-btn{height:46px}
+  .picker-foot .ghost-btn{height:44px}
+
+  /* —— 底部操作条：贴底，避开手势条 —— */
+  .selbar{
+    left:8px;right:8px;bottom:calc(10px + var(--sab,0px));
+    transform:none;padding:8px 8px 8px 14px;border-radius:18px;
+    animation:none;max-width:none;
+  }
+  .selbar-btn{height:40px;padding:0 12px;font-size:13.5px}
+  /* 提示气泡在手机上放到顶部：底部要让给键盘、贴底弹窗和多选操作条，
+     放上面就永远不会被它们盖住（之前移动到…的弹窗会压住提示） */
+  .toast-wrap{
+    top:calc(10px + var(--sat,0px));bottom:auto;
+    max-width:92vw;flex-direction:column-reverse;
+  }
+  .toast{font-size:13.5px;padding:12px 18px;max-width:86vw;animation-name:toastInTop}
+  @keyframes toastInTop{from{opacity:0;transform:translateY(-12px) scale(.96)}to{opacity:1;transform:none}}
+
+  /* —— 阅读页底部一排按钮：手机上多到放不下，横向滚动 + 右侧渐隐提示"还能往右划" —— */
+  .reader-foot{
+    -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 30px),transparent);
+    mask-image:linear-gradient(90deg,#000 calc(100% - 30px),transparent);
+  }
+
+  /* —— 图片灯箱：手机上让图尽量大 —— */
+  .lightbox{padding:8px}
+  .lightbox img{border-radius:10px}
+  .dropzone-box{padding:34px 28px;margin:0 16px}
+}
+
+/* ---------------- 触摸设备（没有鼠标悬停） ---------------- */
+@media (hover:none){
+  /* 手机上永远触发不了 :hover，靠 hover 才出现的按钮等于不存在 */
+  .cat-more{opacity:1}
+  .card-more{opacity:1}
+  .card-open{display:none}
+  .card:hover{transform:none;box-shadow:var(--sh-1)}
+  .card:hover::after{opacity:.075;transform:none}
+  .ghost-btn:hover,.mini-btn:hover,.icon-btn:hover{transform:none}
+  /* 安卓上点按会闪一层灰色高亮，和卡片自己的按下效果叠在一起很脏；关掉它 */
+  button,.card,.cat-item,.side-foot-btn,label{-webkit-tap-highlight-color:transparent}
+  /* 卡片长按会同时选中文字 + 弹出菜单，看着像坏了；卡片本身不让选文字，
+     要看要复制正文，点开卡片后有「复制正文」。侧栏和工具条同理。 */
+  .card,.card-sum,.card-title,.sidebar,.board-tools{-webkit-user-select:none;user-select:none}
+  /* 输入框照旧能选文字、能长按粘贴 */
+  input,textarea,select,.md{-webkit-user-select:text;user-select:text}
 }
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.01ms!important;transition-duration:.06s!important}

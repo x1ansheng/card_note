@@ -48,6 +48,9 @@
 
 <div class="app" id="app">
 
+  <!-- 手机端抽屉侧栏背后的遮罩：点它就收起侧栏（桌面档不显示） -->
+  <div class="side-backdrop" id="sideBackdrop"></div>
+
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <div class="brand-mark">卡</div>
@@ -107,6 +110,7 @@
         </select>
       </div>
       <button class="mini-btn" id="btnSelectMode" title="勾选多张卡片，一起移动或复制到别的类别">批量整理</button>
+      <span class="board-count" id="boardCount"></span>
       <div class="density-wrap" id="densityWrap" title="调节卡片大小：紧凑 → 小 → 中 → 大 → 特大 → 单列全宽">
         <button class="dens-btn" id="densMinus" title="卡片小一点">−</button>
         <span class="dens-label" id="densLabel">中</span>

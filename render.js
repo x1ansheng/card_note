@@ -162,6 +162,19 @@
       });
     }
 
+    // 宽表格：外面套一层横向滚动容器。
+    // 手机/Pad 上四列以上的表格放不下，如果不套，整个正文会被撑宽、文字被挤成一条。
+    // 注意要放在 restore() 之后做 —— restore 会把包着表格的 <p> 拆掉，那时才是安全的 DOM。
+    if (opts.tableWrap !== false) {
+      Array.prototype.slice.call(root.querySelectorAll('table')).forEach(function (t) {
+        if (t.parentNode && t.parentNode.classList && t.parentNode.classList.contains('table-wrap')) return;
+        var box = document.createElement('div');
+        box.className = 'table-wrap';
+        t.parentNode.insertBefore(box, t);
+        box.appendChild(t);
+      });
+    }
+
     // 代码高亮
     if (global.hljs) {
       Array.prototype.slice.call(root.querySelectorAll('pre code')).forEach(function (el) {

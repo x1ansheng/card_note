@@ -9,7 +9,7 @@
   var R = window.NoteRender;
 
   // 界面版本号：手机上用它确认是不是拿到了最新代码
-  var APP_VERSION = '2026-10-08-1';
+  var APP_VERSION = '2026-10-09-1';
 
   var PALETTE = ['#4b8dff', '#f4a83b', '#8b7cf6', '#12b8a6', '#f2708c', '#2fb3e8', '#5cc98a', '#ee8455'];
 
@@ -284,6 +284,24 @@
     if (m) m.remove();
   }
 
+  /* ---------------- 手机端的抽屉侧栏 ----------------
+     body 上挂 side-open 是为了两件事：
+       1. 让遮罩淡入（CSS 里 body.side-open .side-backdrop）
+       2. 抽屉打开时锁住底层页面滚动，手指在遮罩上乱划不会把卡片墙带动   */
+  function openSide() {
+    $('#sidebar').classList.add('open');
+    document.body.classList.add('side-open', 'locked');
+  }
+  function closeSide() {
+    var el = $('#sidebar');
+    if (!el || !el.classList.contains('open')) return;
+    el.classList.remove('open');
+    document.body.classList.remove('side-open');
+    // locked 是共用的：只有阅读页/编辑弹窗/设置弹窗都没开时才解开
+    var busy = ed.open || !$('#reader').hidden || !$('#settings').hidden || !$('#modal').hidden;
+    if (!busy) document.body.classList.remove('locked');
+  }
+
   function boardMessage(title, sub, btnText, btnFn) {
     var board = $('#board');
     board.innerHTML = '';
@@ -352,6 +370,7 @@
       $('#boardTitle').textContent = '搜索：' + state.query;
       $('#boardSub').textContent = '找到 ' + state.hits.length + ' 张相关卡片';
       $('#toolsRight').innerHTML = '按相关度排序 · 清空搜索可返回';
+      $('#boardCount').textContent = state.hits.length + ' 张';
     } else {
       $('#boardTitle').textContent = title;
       var sub = list.length + ' 张卡片';
@@ -361,6 +380,8 @@
       }
       $('#boardSub').textContent = sub;
       $('#toolsRight').innerHTML = state.lastSync ? ('云端同步 ' + state.lastSync.slice(11)) : '尚未同步';
+      // 手机上顶栏副标题被隐藏，卡片数量放到工具条里显示
+      $('#boardCount').textContent = list.length + ' 张';
     }
 
     board.innerHTML = '';
@@ -1395,9 +1416,15 @@
       this.value = '';
     });
 
-    // 移动端侧栏
-    $('#btnOpenSide').addEventListener('click', function () { $('#sidebar').classList.add('open'); });
-    $('#btnCloseSide').addEventListener('click', function () { $('#sidebar').classList.remove('open'); });
+    // 移动端侧栏（抽屉）：点遮罩、点完类别、按 Esc 都要能收起来
+    $('#btnOpenSide').addEventListener('click', function () { openSide(); });
+    $('#btnCloseSide').addEventListener('click', function () { closeSide(); });
+    var sb = $('#sideBackdrop');
+    if (sb) sb.addEventListener('click', closeSide);
+    $('#catList').addEventListener('click', function (e) {
+      if (e.target.closest('.cat-more')) return;      // 点的是"⋯"就打开菜单，先别收
+      if (e.target.closest('.cat-item')) closeSide();
+    });
 
     // 快捷键
     document.addEventListener('keydown', function (e) {
@@ -1409,6 +1436,7 @@
         if (!$('#picker').hidden) { closePicker(null); return; }
         if (ed.open) { closeEditor(); return; }
         if (!$('#reader').hidden) { closeReader(); return; }
+        if ($('#sidebar').classList.contains('open')) { closeSide(); return; }
         if (selectedIds().length) { clearSelection(); return; }
       }
       if (ed.open && (e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'Enter')) {
@@ -1706,5 +1734,17 @@
       if (window.GiteeSync && window.GiteeSync.ready()) setTimeout(function () { doSync(true); }, 800);
     });
   });
-  window.__cardnote = { state: state, load: load };
+  window.__cardnote = {
+    state: state, load: load, render: renderBoard,
+    // 给自动化测试/截图用：直接设定卡片大小档位（0=紧凑 … 5=单列）
+    setDensity: function (i) { state.density = i; applyDensity(); renderBoard(); },
+    // 同上：设定网格/列表视图（否则前一个页面改过的视图会被后面的页面继承）
+    setView: function (v) {
+      state.view = v === 'list' ? 'list' : 'grid';
+      localStorage.setItem('cn.view', state.view);
+      $$('#viewSeg button').forEach(function (b) { b.classList.toggle('on', b.dataset.view === state.view); });
+      renderBoard();
+    },
+    appVersion: APP_VERSION
+  };
 })();
