@@ -10,6 +10,9 @@
 /* ---------------- 设计令牌：每套主题只改这一块 ---------------- */
 :root{
   --font: "PingFang SC","HarmonyOS Sans SC","MiSans","Source Han Sans SC","Microsoft YaHei UI","Microsoft YaHei",sans-serif;
+  /* 标题用衬线（宋体一路），这是"古典纸感"的主要来源；
+     设备上没有衬线中文字体时自动退回无衬线，不会乱。 */
+  --font-serif: "Songti SC","Noto Serif CJK SC","Source Han Serif SC","Noto Serif SC","STSong","SimSun",serif;
   --mono: "JetBrains Mono","Cascadia Code","Cascadia Mono",Consolas,"SF Mono",Menlo,monospace;
 
   --r-sm:10px;
@@ -22,6 +25,10 @@
 
   --sidebar-w:250px;
 
+  /* 纸纹颗粒：叠在纸色底上的一层细噪点，是"纸感"的关键一笔。
+     极简主题不需要，在它那一块里把它设成 none。 */
+  --noise:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.05'/%3E%3C/svg%3E");
+
   /* 安全区：刘海屏 / 手势条的避让距离。没有安全区的设备取 0，不影响桌面 */
   --sat:env(safe-area-inset-top,0px);
   --sab:env(safe-area-inset-bottom,0px);
@@ -29,134 +36,99 @@
   --sar:env(safe-area-inset-right,0px);
 }
 
-/* —— 晴山（青）：承袭原品牌色，更细腻 —— */
-:root,:root[data-theme="qing"]{
-  --bg:#f3f7f6;
-  --surface:#ffffff;
-  --surface-2:#f1f6f4;
-  --ink:#1c2b27;
-  --ink-2:#527068;
-  --ink-3:#8ea8a0;
-  --line:#e3ebea;
-  --line-2:#d5e0de;
-  --accent:#0ea592;
-  --accent-2:#2ec4ad;
-  --accent-ink:#0a7a6b;
-  --accent-soft:rgba(14,165,146,.10);
-  --accent-line:rgba(14,165,146,.40);
-  --amber:#e0952f;
-  --rose:#e4607e;
-  --atm-1:rgba(46,196,173,.13);
-  --atm-2:rgba(94,158,150,.10);
-  --sh-1:0 1px 2px rgba(23,60,53,.045), 0 4px 16px rgba(23,60,53,.06);
-  --sh-2:0 12px 32px rgba(23,60,53,.11), 0 2px 6px rgba(23,60,53,.05);
-  --sh-3:0 30px 72px rgba(15,42,37,.22);
-  --code-bg:#f3f8f6;
-  --code-ink:#2f5560;
+/* —— 宣纸（古典纸质，默认）——
+   参考：米色纸底 + 墨黑字 + 朱砂红唯一强调色 + 宋体衬线标题 + 柔和新拟态阴影。
+   分类颜色用传统矿物色（赭石/花青/藤黄/胭脂…）并整体压暗，和纸感统一。 */
+:root,:root[data-theme="xuan"]{
+  --bg:#e9e3d5;
+  --surface:#f6f1e7;
+  --surface-2:#efe9dc;
+  --ink:#2a2620;
+  --ink-2:#6b6155;
+  --ink-3:#9c9284;
+  --line:rgba(42,38,32,.13);
+  --line-2:rgba(42,38,32,.20);
+  --accent:#a8412f;          /* 朱砂 */
+  --accent-2:#bd5540;
+  --accent-ink:#8e3324;
+  --accent-soft:rgba(168,65,47,.10);
+  --accent-line:rgba(168,65,47,.38);
+  --on-accent:#fdfaf4;       /* 压在强调色上的文字色 */
+  --amber:#a8791f;
+  --rose:#a8412f;
+  --atm-1:rgba(150,124,84,.10);   /* 纸面的不均匀感，不用彩色光晕 */
+  --atm-2:rgba(120,104,80,.07);
+  --sh-1:0 1px 2px rgba(90,74,48,.08), 0 6px 18px rgba(90,74,48,.075);
+  --sh-2:0 10px 28px rgba(90,74,48,.13), 0 2px 6px rgba(90,74,48,.06);
+  --sh-3:0 28px 60px rgba(60,48,30,.26);
+  --code-bg:#efe8da;
+  --code-ink:#4a4034;
+  --r-btn:9px;               /* 按钮小圆角，带点印章的方正感 */
+  --r-mark:8px;              /* 品牌小方块 */
+  --font-title:var(--font-serif);   /* 卡片标题也用宋体，纸感才统一 */
 }
 
-/* —— 远黛（靛蓝）—— */
-:root[data-theme="dai"]{
-  --bg:#f4f6fb;
+/* —— 极简（简约现代）——
+   参考：近白灰底 + 纯黑白灰、零彩色 + 衬线大标题 + 黑色胶囊按钮 + 发丝分割线。 */
+:root[data-theme="jian"]{
+  --bg:#f4f4f2;
   --surface:#ffffff;
-  --surface-2:#f1f4fa;
-  --ink:#1f2637;
-  --ink-2:#56617c;
-  --ink-3:#929bb4;
-  --line:#e4e9f3;
-  --line-2:#d6dcec;
-  --accent:#4a63d8;
-  --accent-2:#6d88ee;
-  --accent-ink:#3a4fb0;
-  --accent-soft:rgba(74,99,216,.10);
-  --accent-line:rgba(74,99,216,.40);
-  --amber:#e0952f;
-  --rose:#e4607e;
-  --atm-1:rgba(109,136,238,.12);
-  --atm-2:rgba(120,128,196,.09);
-  --sh-1:0 1px 2px rgba(34,46,84,.045), 0 4px 16px rgba(34,46,84,.06);
-  --sh-2:0 12px 32px rgba(34,46,84,.11), 0 2px 6px rgba(34,46,84,.05);
-  --sh-3:0 30px 72px rgba(22,30,58,.24);
-  --code-bg:#f3f6fc;
-  --code-ink:#33456b;
+  --surface-2:#f0f0ee;
+  --ink:#131313;
+  --ink-2:#6a6a66;
+  --ink-3:#a3a39e;
+  --line:rgba(19,19,19,.10);
+  --line-2:rgba(19,19,19,.16);
+  --accent:#131313;
+  --accent-2:#2e2e2e;
+  --accent-ink:#000000;
+  --accent-soft:rgba(19,19,19,.06);
+  --accent-line:rgba(19,19,19,.30);
+  --on-accent:#ffffff;
+  --amber:#8a8a85;           /* 极简主题里连置顶星都是灰的，不出现彩色 */
+  --rose:#7a7a75;
+  --atm-1:rgba(0,0,0,.022);
+  --atm-2:rgba(0,0,0,.016);
+  --sh-1:0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.05);
+  --sh-2:0 12px 32px rgba(0,0,0,.09), 0 2px 6px rgba(0,0,0,.04);
+  --sh-3:0 30px 70px rgba(0,0,0,.18);
+  --code-bg:#f2f2f0;
+  --code-ink:#2b2b28;
+  --r-btn:999px;
+  --r-mark:999px;
+  --noise:none;               /* 极简主题不要纸纹，本来就是干净的平面 */
+  --font-title:var(--font);   /* 极简主题的卡片标题用无衬线，只有大标题才用宋体 */
 }
 
-/* —— 竹青（绿）—— */
-:root[data-theme="zhu"]{
-  --bg:#f5f7f2;
-  --surface:#ffffff;
-  --surface-2:#f2f5ec;
-  --ink:#242b1f;
-  --ink-2:#5d6b53;
-  --ink-3:#99a78c;
-  --line:#e6eae1;
-  --line-2:#d9e0d1;
-  --accent:#4c995e;
-  --accent-2:#6cba78;
-  --accent-ink:#3a7a49;
-  --accent-soft:rgba(76,153,94,.11);
-  --accent-line:rgba(76,153,94,.42);
-  --amber:#e0952f;
-  --rose:#e4607e;
-  --atm-1:rgba(108,186,120,.13);
-  --atm-2:rgba(140,168,110,.10);
-  --sh-1:0 1px 2px rgba(44,60,36,.045), 0 4px 16px rgba(44,60,36,.06);
-  --sh-2:0 12px 32px rgba(44,60,36,.11), 0 2px 6px rgba(44,60,36,.05);
-  --sh-3:0 30px 72px rgba(30,44,24,.22);
-  --code-bg:#f4f8ef;
-  --code-ink:#3d5a3a;
-}
-
-/* —— 秋柿（橙）—— */
-:root[data-theme="shu"]{
-  --bg:#faf5f1;
-  --surface:#ffffff;
-  --surface-2:#f9f0e9;
-  --ink:#2f241c;
-  --ink-2:#77604f;
-  --ink-3:#ad9785;
-  --line:#eee4db;
-  --line-2:#e4d5c8;
-  --accent:#d4622b;
-  --accent-2:#ef8547;
-  --accent-ink:#b04d1e;
-  --accent-soft:rgba(212,98,43,.10);
-  --accent-line:rgba(212,98,43,.40);
-  --amber:#d98a1f;
-  --rose:#e4607e;
-  --atm-1:rgba(239,133,71,.12);
-  --atm-2:rgba(200,150,110,.10);
-  --sh-1:0 1px 2px rgba(80,48,24,.045), 0 4px 16px rgba(80,48,24,.06);
-  --sh-2:0 12px 32px rgba(80,48,24,.11), 0 2px 6px rgba(80,48,24,.05);
-  --sh-3:0 30px 72px rgba(60,34,16,.22);
-  --code-bg:#faf3ec;
-  --code-ink:#6b4a33;
-}
-
-/* —— 墨夜（深色）—— */
+/* —— 墨夜（极简的暗色版）—— */
 :root[data-theme="mo"]{
-  --bg:#10161b;
-  --surface:#1a232b;
-  --surface-2:#212d36;
-  --ink:#e8eef1;
-  --ink-2:#9fb2ba;
-  --ink-3:#6d7e88;
-  --line:rgba(232,240,244,.085);
-  --line-2:rgba(232,240,244,.14);
-  --accent:#3ac6ae;
-  --accent-2:#5fd8c2;
-  --accent-ink:#84ddcb;
-  --accent-soft:rgba(58,198,174,.13);
-  --accent-line:rgba(58,198,174,.44);
-  --amber:#e8ac4f;
-  --rose:#f07f97;
-  --atm-1:rgba(58,198,174,.08);
-  --atm-2:rgba(94,140,160,.07);
-  --sh-1:0 1px 2px rgba(0,0,0,.30), 0 4px 16px rgba(0,0,0,.26);
-  --sh-2:0 12px 32px rgba(0,0,0,.40), 0 2px 6px rgba(0,0,0,.28);
-  --sh-3:0 30px 72px rgba(0,0,0,.55);
-  --code-bg:#16202a;
-  --code-ink:#a8c6d2;
+  --bg:#141414;
+  --surface:#1d1d1d;
+  --surface-2:#252525;
+  --ink:#ebe9e4;
+  --ink-2:#a5a39d;
+  --ink-3:#74726c;
+  --line:rgba(235,233,228,.10);
+  --line-2:rgba(235,233,228,.16);
+  --accent:#e6e3dc;          /* 暗色下强调色反过来用象牙白 */
+  --accent-2:#ffffff;
+  --accent-ink:#f2f0ea;
+  --accent-soft:rgba(235,233,228,.09);
+  --accent-line:rgba(235,233,228,.30);
+  --on-accent:#141414;       /* 亮按钮上压深字 */
+  --amber:#c9a86a;
+  --rose:#c98a8a;
+  --atm-1:rgba(235,233,228,.025);
+  --atm-2:rgba(235,233,228,.018);
+  --sh-1:0 1px 2px rgba(0,0,0,.34), 0 6px 20px rgba(0,0,0,.28);
+  --sh-2:0 12px 32px rgba(0,0,0,.44), 0 2px 6px rgba(0,0,0,.30);
+  --sh-3:0 30px 72px rgba(0,0,0,.58);
+  --code-bg:#1a1a1a;
+  --code-ink:#c2c8cc;
+  --r-btn:999px;
+  --r-mark:999px;
+  --noise:none;
+  --font-title:var(--font);
 }
 
 /* ---------------- 基础 ---------------- */
@@ -168,10 +140,11 @@ body{
   font-family:var(--font);
   color:var(--ink);
   background:var(--bg);
-  /* 氛围层：两团非常淡的、跟着主题色走的光晕，代替平铺纯色 */
+  /* 氛围层：两团极淡的暖色洗染 + 一层纸纹颗粒，代替平铺纯色 */
   background-image:
     radial-gradient(960px 540px at 6% -8%, var(--atm-1), transparent 62%),
-    radial-gradient(820px 500px at 104% -2%, var(--atm-2), transparent 64%);
+    radial-gradient(820px 500px at 104% -2%, var(--atm-2), transparent 64%),
+    var(--noise);
   background-attachment:fixed;
   -webkit-font-smoothing:antialiased;
   text-rendering:optimizeLegibility;
@@ -208,26 +181,25 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 }
 .brand{display:flex;align-items:center;gap:11px;padding:2px 6px}
 .brand-mark{
-  width:38px;height:38px;border-radius:13px;flex:none;
-  display:grid;place-items:center;color:#fff;font-weight:700;font-size:17px;
-  background:linear-gradient(140deg,var(--accent-2),var(--accent));
-  box-shadow:0 6px 16px color-mix(in srgb,var(--accent) 34%,transparent),
-             inset 0 1px 0 rgba(255,255,255,.22);
+  width:38px;height:38px;border-radius:var(--r-mark);flex:none;
+  display:grid;place-items:center;color:var(--on-accent);
+  font-family:var(--font-serif);font-weight:600;font-size:18px;
+  background:var(--accent);
+  box-shadow:var(--sh-1);
 }
 .brand-text{display:flex;flex-direction:column;line-height:1.25;min-width:0}
-.brand-text b{font-size:16.5px;letter-spacing:.2px;font-weight:700}
+.brand-text b{font-size:16.5px;letter-spacing:.2px;font-weight:700;font-family:var(--font-serif)}
 .brand-text span{font-size:11.5px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 .new-card-btn{
   display:flex;align-items:center;justify-content:center;gap:7px;
-  height:46px;border-radius:var(--r-md);color:#fff;font-size:15px;font-weight:600;
-  background:linear-gradient(135deg,var(--accent-2),var(--accent));
-  box-shadow:0 8px 20px color-mix(in srgb,var(--accent) 32%,transparent),
-             inset 0 1px 0 rgba(255,255,255,.20);
+  height:46px;border-radius:var(--r-btn);color:var(--on-accent);font-size:15px;font-weight:600;
+  background:var(--accent);
+  box-shadow:var(--sh-1);
   transition:transform .18s var(--ease), box-shadow .18s var(--ease), filter .18s;
 }
-.new-card-btn svg{width:18px;height:18px;stroke-width:2.4}
-.new-card-btn:hover{transform:translateY(-1px);box-shadow:0 12px 26px color-mix(in srgb,var(--accent) 40%,transparent)}
+.new-card-btn svg{width:18px;height:18px;stroke-width:2.2}
+.new-card-btn:hover{transform:translateY(-1px);box-shadow:var(--sh-2);filter:brightness(1.06)}
 .new-card-btn:active{transform:translateY(0) scale(.985)}
 
 .side-scroll{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:6px;padding-bottom:4px}
@@ -242,7 +214,7 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
   position:relative;
 }
 .cat-item:hover{background:var(--accent-soft);color:var(--ink)}
-.cat-item.on{background:linear-gradient(90deg,var(--accent-soft),color-mix(in srgb,var(--accent) 4%,transparent));color:var(--accent-ink);font-weight:600}
+.cat-item.on{background:var(--accent-soft);color:var(--accent-ink);font-weight:600}
 .cat-item.on::before{content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:18px;border-radius:3px;background:var(--accent)}
 .cat-dot{width:9px;height:9px;border-radius:50%;flex:none;box-shadow:0 0 0 3px rgba(0,0,0,.02)}
 .cat-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -265,26 +237,31 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .side-foot-btn:hover{background:color-mix(in srgb,var(--ink) 5%,transparent);color:var(--ink-2)}
 .side-foot-btn svg{width:16px;height:16px}
 
-/* 主题切换：侧栏底部一排配色点 */
+/* 主题切换：侧栏底部一排小圆点。
+   每个点画的是"那套主题的纸色 + 它的强调色"，所以一眼就能看出是什么风格，
+   而不是三个花花绿绿的色球。 */
 .theme-picker{display:flex;align-items:center;gap:10px;padding:2px 11px 12px}
 .theme-label{font-size:11.5px;color:var(--ink-3);letter-spacing:.5px}
 .theme-dots{display:flex;gap:9px;margin-left:auto}
 .tdot{
-  width:22px;height:22px;border-radius:50%;padding:0;position:relative;
+  width:24px;height:24px;border-radius:50%;padding:0;position:relative;
+  background:var(--dot-bg);border:1px solid var(--line-2);
   transition:transform .16s var(--ease);
+}
+.tdot::before{
+  content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:10px;height:10px;border-radius:50%;background:var(--dot-fg);
 }
 .tdot::after{
   content:"";position:absolute;inset:-5px;border-radius:50%;
-  border:2px solid transparent;transition:border-color .16s;
+  border:1.5px solid transparent;transition:border-color .16s;
 }
-.tdot.on::after{border-color:currentColor}
-.tdot:hover{transform:scale(1.14)}
-.tdot:active{transform:scale(.96)}
-.tdot[data-theme="qing"]{background:linear-gradient(135deg,#2ec4ad,#0ea592);color:#0ea592}
-.tdot[data-theme="dai"]{background:linear-gradient(135deg,#6d88ee,#4a63d8);color:#4a63d8}
-.tdot[data-theme="zhu"]{background:linear-gradient(135deg,#6cba78,#4c995e);color:#4c995e}
-.tdot[data-theme="shu"]{background:linear-gradient(135deg,#ef8547,#d4622b);color:#d4622b}
-.tdot[data-theme="mo"]{background:linear-gradient(135deg,#41525f,#141c24);color:#41525f;border:1px solid var(--line-2)}
+.tdot.on::after{border-color:var(--ink)}
+.tdot:hover{transform:scale(1.1)}
+.tdot:active{transform:scale(.95)}
+.tdot[data-theme="xuan"]{--dot-bg:#e9e3d5;--dot-fg:#a8412f}
+.tdot[data-theme="jian"]{--dot-bg:#f7f7f5;--dot-fg:#131313}
+.tdot[data-theme="mo"]{--dot-bg:#1d1d1d;--dot-fg:#e6e3dc}
 
 /* 手机端抽屉侧栏的遮罩：桌面档不显示（侧栏本来就在页面上） */
 .side-backdrop{display:none}
@@ -297,7 +274,7 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 }
 .topbar-title{min-width:0;flex:none;max-width:34%}
 .topbar-title h1{
-  margin:0;font-size:22px;font-weight:750;letter-spacing:-.3px;
+  margin:0;font-size:23px;font-weight:600;letter-spacing:-.2px;font-family:var(--font-serif);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 .topbar-title p{margin:3px 0 0;font-size:12.5px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -332,22 +309,21 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .seg{display:flex;background:color-mix(in srgb,var(--surface) 88%,transparent);border-radius:13px;padding:3px;box-shadow:var(--sh-1);gap:2px}
 .seg button{width:34px;height:32px;border-radius:10px;display:grid;place-items:center;color:var(--ink-3);transition:.18s}
 .seg button svg{width:16px;height:16px}
-.seg button.on{background:linear-gradient(135deg,var(--accent-2),var(--accent));color:#fff;box-shadow:0 3px 8px color-mix(in srgb,var(--accent) 32%,transparent)}
+.seg button.on{background:var(--accent);color:var(--on-accent)}
 
 .primary-btn{
-  display:inline-flex;align-items:center;gap:7px;height:42px;padding:0 18px;border-radius:14px;
-  color:#fff;font-size:14.5px;font-weight:600;white-space:nowrap;
-  background:linear-gradient(135deg,var(--accent-2),var(--accent));
-  box-shadow:0 8px 20px color-mix(in srgb,var(--accent) 32%,transparent),
-             inset 0 1px 0 rgba(255,255,255,.18);
-  transition:transform .18s var(--ease),box-shadow .18s var(--ease);
+  display:inline-flex;align-items:center;gap:7px;height:42px;padding:0 20px;border-radius:var(--r-btn);
+  color:var(--on-accent);font-size:14.5px;font-weight:600;white-space:nowrap;
+  background:var(--accent);
+  box-shadow:var(--sh-1);
+  transition:transform .18s var(--ease),box-shadow .18s var(--ease),filter .18s;
 }
-.primary-btn svg{width:17px;height:17px;stroke-width:2.4}
-.primary-btn:hover{transform:translateY(-1px);box-shadow:0 12px 26px color-mix(in srgb,var(--accent) 40%,transparent)}
+.primary-btn svg{width:17px;height:17px;stroke-width:2.2}
+.primary-btn:hover{transform:translateY(-1px);box-shadow:var(--sh-2);filter:brightness(1.06)}
 .primary-btn:active{transform:translateY(0) scale(.985)}
 .primary-btn:disabled{opacity:.55;transform:none;cursor:default}
 .ghost-btn{
-  height:42px;padding:0 20px;border-radius:14px;font-size:14.5px;font-weight:500;color:var(--ink-2);
+  height:42px;padding:0 20px;border-radius:var(--r-btn);font-size:14.5px;font-weight:500;color:var(--ink-2);
   background:color-mix(in srgb,var(--surface) 92%,transparent);box-shadow:var(--sh-1);transition:.18s;
 }
 .ghost-btn:hover{color:var(--ink);background:var(--surface);box-shadow:var(--sh-2)}
@@ -365,8 +341,7 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .tools-right{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--ink-3)}
 .mini-btn{padding:7px 13px;border-radius:10px;font-size:12.5px;color:var(--ink-2);background:color-mix(in srgb,var(--surface) 84%,transparent);box-shadow:var(--sh-1);transition:.16s}
 .mini-btn:hover{color:var(--accent-ink);transform:translateY(-1px)}
-.mini-btn.on{background:linear-gradient(135deg,var(--accent-2),var(--accent));color:#fff;
-  box-shadow:0 6px 14px color-mix(in srgb,var(--accent) 30%,transparent)}
+.mini-btn.on{background:var(--accent);color:var(--on-accent)}
 
 /* ---------------- 卡片区 ---------------- */
 .board{
@@ -417,6 +392,7 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 
 .card-title{
   margin:0 0 8px;font-size:17.5px;font-weight:650;line-height:1.45;letter-spacing:-.2px;
+  font-family:var(--font-title);
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
 }
 .card-sum{
@@ -444,9 +420,9 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .card-more:hover{background:var(--accent-soft);color:var(--accent-ink)}
 .sel-badge{
   position:absolute;right:10px;top:10px;width:30px;height:30px;border-radius:9px;z-index:2;
-  display:none;place-items:center;color:#fff;
-  background:linear-gradient(135deg,var(--accent-2),var(--accent));
-  box-shadow:0 5px 12px color-mix(in srgb,var(--accent) 36%,transparent);
+  display:none;place-items:center;color:var(--on-accent);
+  background:var(--accent);
+  box-shadow:var(--sh-1);
 }
 .sel-badge svg{width:15px;height:15px;stroke-width:3}
 .card.selected{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft),var(--sh-2);transform:translateY(-2px)}
@@ -491,13 +467,12 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .board.d-full .tag{font-size:12.5px;padding:3px 10px}
 .board.d-full .card-open{opacity:1;transform:none}
 
-/* 列表视图 = 「一行一个标题」的清单
+/* 列表视图 = 一行一个标题的清单（宽度铺满，右边不再空一大块）
    1. `.board.list` 是纵向 flex 容器，卡片默认 `flex-shrink:1` —— 卡片一多，
       每一行会被等比压扁（21 张时只剩 30px）。必须 `flex:0 0 auto`。
-   2. 列表里只放标题 + 分类 + 时间。摘要和标签放在清单里既挤又对不齐。
-      只有"搜索命中"时例外，把命中的那段正文显示出来。
-   3. 视觉上做成真正的"清单"：没有卡片的底和阴影，只有发丝分隔线。 */
-.board.list{gap:0}
+   2. 列表里只放标题 + 分类 + 时间。只有"搜索命中"时例外，把命中的正文显示出来。
+   3. 视觉上是清单：没有卡片的底和阴影，只有发丝分隔线。 */
+.board.list{gap:0;max-width:none}
 .board.list .card{
   display:flex;flex-direction:row;align-items:center;gap:14px;
   flex:0 0 auto;min-height:52px;
@@ -596,7 +571,7 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .reader-inner{max-width:760px;margin:0 auto;padding:32px 42px 64px}
 
 .reader-head{padding-bottom:20px;border-bottom:1px solid var(--line);margin-bottom:26px}
-.reader-head h2{margin:0;font-size:27px;font-weight:750;line-height:1.4;letter-spacing:-.5px}
+.reader-head h2{margin:0;font-size:28px;font-weight:600;line-height:1.4;letter-spacing:-.2px;font-family:var(--font-serif)}
 .reader-meta{margin-top:12px;display:flex;align-items:center;gap:9px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-3)}
 .reader-meta .dot{width:3px;height:3px;border-radius:50%;background:var(--ink-3);opacity:.6}
 .reader-meta .tag{font-size:11.5px}
@@ -607,22 +582,21 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 }
 .reader-foot .ghost-btn{height:37px;padding:0 15px;font-size:13px;display:inline-flex;align-items:center;gap:6px;border-radius:11px}
 .reader-foot .ghost-btn svg{width:15px;height:15px}
-.reader-foot .danger:hover{color:#e0556f;background:rgba(228,96,126,.10)}
+.reader-foot .danger:hover{color:var(--rose);background:color-mix(in srgb,var(--rose) 10%,transparent)}
 
 /* ---------------- Markdown 排版（中文长文阅读的把持在这里） ---------------- */
 .md{--fs:16.6px;font-size:var(--fs);line-height:1.94;color:var(--ink);word-wrap:break-word}
 .md > *:first-child{margin-top:0}
 .md > *:last-child{margin-bottom:0}
 .md p{margin:0 0 1.05em}
-.md h1,.md h2,.md h3,.md h4{line-height:1.45;font-weight:680;letter-spacing:-.2px;position:relative;color:var(--ink)}
+.md h1,.md h2,.md h3,.md h4{line-height:1.45;font-weight:680;letter-spacing:-.2px;position:relative;color:var(--ink);font-family:var(--font-serif)}
 .md h1{font-size:1.5em;margin:1.7em 0 .65em}
+/* 小节标题：只用字号 + 一条发丝底线区分，不放任何竖线装饰。
+   （2026-10-10：原来在 h2 左边画了一道强调色竖杠，结果和折叠箭头叠在一起，
+     看着像"|v"两个莫名其妙的符号，已去掉。） */
 .md h2{
-  font-size:1.24em;margin:1.75em 0 .7em;padding:2px 0 9px 14px;
+  font-size:1.22em;margin:1.8em 0 .7em;padding:0 0 9px;
   border-bottom:1px solid var(--line);
-}
-.md h2::before{
-  content:"";position:absolute;left:0;top:.36em;bottom:.85em;width:3.5px;border-radius:3px;
-  background:linear-gradient(180deg,var(--accent-2),var(--accent));
 }
 .md h3{font-size:1.1em;margin:1.5em 0 .55em;color:var(--ink)}
 .md h4{font-size:1em;margin:1.3em 0 .5em;color:var(--ink-2)}
@@ -634,8 +608,9 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 }
 .md .sec-arrow svg{width:1em;height:1em;stroke-width:2.4;display:block}
 .md .sec-head.folded .sec-arrow{transform:rotate(-90deg)}
-.md h2 .sec-arrow{position:absolute;left:0;top:50%;margin-top:-.55em;width:1.1em;height:1.1em;margin-right:0}
-.md h2.collapsible{padding-left:25px}
+/* 折叠箭头挪到标题行右端（原来在左端，会和别的东西挤在一起，看着莫名其妙） */
+.md h2 .sec-arrow{position:absolute;right:2px;left:auto;top:50%;margin-top:-.55em;width:1.1em;height:1.1em;margin-right:0}
+.md h2.collapsible{padding-left:0;padding-right:26px}
 .md h3 .sec-arrow{margin-right:.3em;opacity:.6}
 .md .sec-wrap > .sec-inner > *:first-child{margin-top:.2em}
 
@@ -819,28 +794,25 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .picker-foot{display:flex;justify-content:flex-end;padding-top:12px}
 .picker-foot .ghost-btn{height:38px;padding:0 18px;font-size:14px}
 
-/* ---------------- 多选操作条（深色胶囊，在浅底上也压得住） ---------------- */
+/* ---------------- 多选操作条 ----------------
+   用「墨底 + 纸色字」的反色胶囊：浅色主题下是深色胶囊，墨夜下自动变成浅色胶囊
+   （因为 --ink 和 --bg 在深色主题里是反过来的），所以不用为深色单独写一套。 */
 .selbar{
   position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:175;
   display:flex;align-items:center;gap:5px;padding:8px 10px 8px 18px;
   max-width:calc(100vw - 28px);overflow-x:auto;
-  background:color-mix(in srgb,var(--ink) 94%,transparent);
-  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-radius:18px;
-  box-shadow:0 16px 40px rgba(10,25,40,.32);
+  background:var(--ink);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-radius:var(--r-btn);
+  box-shadow:0 16px 40px rgba(20,16,10,.28);
   animation:selbarIn .26s var(--ease-out) both;
 }
-:root[data-theme="mo"] .selbar{background:color-mix(in srgb,#e8eef1 94%,transparent)}
-:root[data-theme="mo"] .selbar-count,:root[data-theme="mo"] .selbar-btn{color:#1a232b}
-:root[data-theme="mo"] .selbar-btn.ghost{color:rgba(26,35,43,.62)}
-:root[data-theme="mo"] .selbar-sep{background:rgba(26,35,43,.2)}
 @keyframes selbarIn{from{opacity:0;transform:translate(-50%,16px)}to{opacity:1;transform:translate(-50%,0)}}
-.selbar-count{color:#f2f6f7;font-size:13.5px;font-weight:600;white-space:nowrap;padding-right:2px}
-.selbar-sep{width:1px;height:18px;background:rgba(255,255,255,.18);margin:0 5px;flex:none}
-.selbar-btn{height:34px;padding:0 13px;border-radius:11px;font-size:13px;white-space:nowrap;
-  color:rgba(242,246,247,.88);transition:background .15s,color .15s}
-.selbar-btn:hover{background:rgba(255,255,255,.14);color:#fff}
-.selbar-btn.danger:hover{background:rgba(240,90,120,.28);color:#ffd9e0}
-.selbar-btn.ghost{color:rgba(242,246,247,.6)}
+.selbar-count{color:var(--bg);font-size:13.5px;font-weight:600;white-space:nowrap;padding-right:2px}
+.selbar-sep{width:1px;height:18px;background:color-mix(in srgb,var(--bg) 25%,transparent);margin:0 5px;flex:none}
+.selbar-btn{height:34px;padding:0 13px;border-radius:calc(var(--r-btn) - 2px);font-size:13px;white-space:nowrap;
+  color:color-mix(in srgb,var(--bg) 82%,transparent);transition:background .15s,color .15s}
+.selbar-btn:hover{background:color-mix(in srgb,var(--bg) 16%,transparent);color:var(--bg)}
+.selbar-btn.danger:hover{background:color-mix(in srgb,var(--rose) 34%,transparent);color:#fff}
+.selbar-btn.ghost{color:color-mix(in srgb,var(--bg) 55%,transparent)}
 
 /* 卡片数量：桌面档不显示（顶栏副标题里已经有了），手机上才放进工具条 */
 .board-count{display:none;font-size:12.5px;color:var(--ink-3);white-space:nowrap}
@@ -919,22 +891,21 @@ body.local-mode #readerFoot [data-act="reveal"]{display:none!important}
 .popmenu button svg{width:16px;height:16px;color:var(--ink-3)}
 .popmenu button:hover{background:var(--accent-soft);color:var(--accent-ink)}
 .popmenu button:hover svg{color:var(--accent-ink)}
-.popmenu button.danger:hover{background:rgba(228,96,126,.10);color:#d9435f}
-.popmenu button.danger:hover svg{color:#d9435f}
+.popmenu button.danger:hover{background:color-mix(in srgb,var(--rose) 12%,transparent);color:var(--rose)}
+.popmenu button.danger:hover svg{color:var(--rose)}
 
 /* ---------------- 提示 ---------------- */
 .toast-wrap{position:fixed;left:50%;bottom:34px;transform:translateX(-50%);z-index:200;
   display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
 .toast{
   display:flex;align-items:center;gap:8px;padding:11px 20px;border-radius:20px;
-  background:color-mix(in srgb,var(--ink) 94%,transparent);color:#f2f6f7;font-size:13.5px;
-  box-shadow:0 12px 30px rgba(10,25,40,.3);
-  animation:toastIn .3s var(--ease-out) both;
-  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);max-width:70vw;
+  background:var(--ink);color:var(--bg);font-size:13.5px;
+  box-shadow:0 12px 30px rgba(20,16,10,.26);
+  animation:toastIn .3s var(--ease-out) both;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);max-width:70vw;
 }
 .toast.out{animation:toastOut .25s var(--ease) both}
-.toast.ok{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 97%,transparent),color-mix(in srgb,var(--accent-ink) 97%,transparent))}
-.toast.err{background:linear-gradient(135deg,rgba(230,80,110,.97),rgba(200,50,85,.97))}
+.toast.ok{background:var(--accent);color:var(--on-accent)}
+.toast.err{background:var(--rose);color:#fff}
 @keyframes toastIn{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:none}}
 @keyframes toastOut{to{opacity:0;transform:translateY(8px) scale(.97)}}
 
@@ -1023,14 +994,49 @@ mark.hit{background:color-mix(in srgb,var(--amber) 30%,transparent);color:inheri
   .modal-panel{width:min(860px,100%)}
 }
 
-/* 窄一些的平板（竖屏 800、768 这一档）：侧栏占掉 214 之后，
+/* 窄一些的横屏平板（竖屏 800、768 这一档的横屏）：侧栏占掉 214 之后，
    「标题 + 搜索框 + 三个按钮」一行放不下，搜索框只剩 150px。
    跟手机一样把搜索框单独放第二行。 */
-@media (min-width:761px) and (max-width:900px){
+@media (min-width:761px) and (max-width:900px) and (orientation:landscape){
   .topbar{flex-wrap:wrap;padding:12px 16px 8px;gap:10px}
   .topbar-title{order:1;flex:1;max-width:none;min-width:0}
   .topbar-actions{order:2}
   .search-wrap{order:3;flex-basis:100%;max-width:none;margin-left:0}
+}
+
+/* ---------------- 竖屏（≤1080px）：侧栏收成抽屉 ----------------
+   竖屏本来就只有 700–800px 宽，再让 214px 的侧栏常驻，内容区就被挤得很难看
+   —— 用户明确点出"pad 竖屏太紧凑"。所以竖屏一律把宽度全让给内容，侧栏改成抽屉。
+   （横屏 901px 以上仍然保留常驻侧栏，那里宽度够用。） */
+@media (orientation:portrait) and (max-width:1080px){
+  .only-mobile{display:grid}
+  .sidebar{
+    position:fixed;left:0;top:0;bottom:0;transform:translateX(-102%);
+    transition:transform .3s var(--ease);box-shadow:var(--sh-3);
+    background:var(--surface);width:min(320px,84vw);z-index:60;
+    padding:calc(16px + var(--sat,0px)) 14px calc(14px + var(--sab,0px)) 14px;
+  }
+  .sidebar.open{transform:none}
+  .side-backdrop{
+    display:block;position:fixed;inset:0;z-index:55;
+    background:rgba(24,20,14,.38);
+    -webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);
+    opacity:0;pointer-events:none;transition:opacity .3s var(--ease);
+  }
+  body.side-open .side-backdrop{opacity:1;pointer-events:auto}
+  /* 触摸设备上，靠 hover 才出现的按钮等于不存在 */
+  .cat-more{opacity:1}
+  .cat-item{padding:12px}
+  .side-foot-btn{padding:11px}
+  .topbar-title{max-width:24%}
+  .search-wrap{max-width:300px}
+  /* 宽度回来了，卡片排两列，别一张占满整屏 */
+  .board{padding:0 18px 8px}
+  .board.grid{--card-min:262px;gap:14px}
+  .board.d-xs{--card-min:214px}
+  .board.d-s{--card-min:246px}
+  .board.d-l{--card-min:340px}
+  .board.d-xl{--card-min:430px}
 }
 
 /* ---------------- 手机档：≤760px ---------------- */
