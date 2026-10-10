@@ -5,8 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
 <title>卡片笔记</title>
 <script>
-/* 在样式加载之前就把主题定下来，避免打开时先闪一下默认配色 */
-(function(){try{document.documentElement.dataset.theme=localStorage.getItem('cn.theme')||'qing';}catch(e){document.documentElement.dataset.theme='qing';}})();
+/* 在样式加载之前就把主题定下来，避免打开时先闪一下默认配色。
+   老版本存的是已经删掉的配色名（qing/dai/…），这里做一次迁移，认不出就回宣纸。 */
+(function(){
+  try{
+    var ok={xuan:1,jian:1,mo:1};
+    var t=localStorage.getItem('cn.theme');
+    if(!ok[t]) t='xuan';
+    localStorage.setItem('cn.theme',t);
+    document.documentElement.dataset.theme=t;
+  }catch(e){document.documentElement.dataset.theme='xuan';}
+})();
 </script>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#12b8a6">
@@ -77,11 +86,9 @@
         <div class="theme-picker" id="themePicker">
           <span class="theme-label">外观</span>
           <div class="theme-dots" id="themeDots">
-            <button class="tdot" data-theme="qing" title="晴山（青）" aria-label="晴山"></button>
-            <button class="tdot" data-theme="dai" title="远黛（靛蓝）" aria-label="远黛"></button>
-            <button class="tdot" data-theme="zhu" title="竹青（绿）" aria-label="竹青"></button>
-            <button class="tdot" data-theme="shu" title="秋柿（橙）" aria-label="秋柿"></button>
-            <button class="tdot" data-theme="mo" title="墨夜（深色）" aria-label="墨夜"></button>
+            <button class="tdot" data-theme="xuan" title="宣纸（古典纸质）" aria-label="宣纸"></button>
+            <button class="tdot" data-theme="jian" title="极简（简约现代）" aria-label="极简"></button>
+            <button class="tdot" data-theme="mo" title="墨夜（暗色）" aria-label="墨夜"></button>
           </div>
         </div>
         <button class="side-foot-btn" id="btnSync"><svg><use href="#i-cloud"/></svg><span id="syncLabel">同步</span></button>
