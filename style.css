@@ -12,10 +12,14 @@
 
 /* ---------------- 设计令牌：每套主题只改这一块 ---------------- */
 :root{
-  --font: "PingFang SC","HarmonyOS Sans SC","MiSans","Source Han Sans SC","Microsoft YaHei UI","Microsoft YaHei",sans-serif;
-  /* 标题用衬线（宋体一路），这是"古典纸感"的主要来源；
-     设备上没有衬线中文字体时自动退回无衬线，不会乱。 */
-  --font-serif: "Songti SC","Noto Serif CJK SC","Source Han Serif SC","Noto Serif SC","STSong","SimSun",serif;
+  /* 无衬线堆栈：现代风格的主题一律用它 */
+  --font-sans: "PingFang SC","HarmonyOS Sans SC","MiSans","Source Han Sans SC","Microsoft YaHei UI","Microsoft YaHei",sans-serif;
+  /* --font 是整套界面的正文与控件字体。默认无衬线；
+     宣纸主题会把它整体换成宋体 —— 古典主题里混进黑体，一眼就散。 */
+  --font: var(--font-sans);
+  /* 标题字号倍率：宣纸调大一点，为的是"大气"。所有标题都用 calc() 乘它，
+     这样响应式的字号覆盖（手机档变小）也能一起跟着缩，不会打架。 */
+  --type-scale:1;
   --mono: "JetBrains Mono","Cascadia Code","Cascadia Mono",Consolas,"SF Mono",Menlo,monospace;
 
   /* 展示字体：标题、品牌名用它。默认无衬线（现代风格那一档）；
@@ -57,84 +61,129 @@ html:root{
 }
 
 /* —— 宣纸（古典纸质，默认）——
-   亮米色纸底 + 纸纹颗粒 + 朱砂红唯一强调色 + 楷体标题 + 柔和新拟态阴影。
-   朱砂的色相出处：中国传统色色卡里的"朱红 #ff4c00"，原注就是"朱砂的颜色"。
-   那个纯色（255,76,0）在纸面上太扎眼，这里保留它的橙调、把明度压一档，
-   得到纸面上看得住的朱砂 —— 是带橙的矿物朱，不是普通的红。
+   调子：故宫朱砂的典雅大气。亮米纸底 + 纸纹 + 朱砂 + **通篇宋体**（只有标题用楷体）。
+   两个刻意的决定：
+   1) `--font` 也换成宋体 —— 之前只有大标题是衬线，侧栏、按钮、正文全是黑体，
+      古典主题里混着黑体，所以"看着不像纸、也不够大气"。
+   2) 朱砂取《GB/T 37370-2019 中国常见色色名和色度特性》里"宫墙红"的色相：
+      国标实测值是 RGB 183/85/78（那是被岁月冲淡的墙色），这里把饱和度提一档，
+      得到印泥那种厚朱砂。参考：张涛等《北京宫殿、坛庙古建筑"宫墙红"的组成及色差》。
    分类颜色用传统矿物色（赭石/花青/藤黄/胭脂…），和纸感统一。 */
 :root,:root[data-theme="xuan"]{
-  --bg:#f6f1e6;              /* 纸：比以前亮一档，白天看不发闷 */
-  --surface:#fffdf9;
-  --surface-2:#f8f3e8;
-  --ink:#2b2620;
-  --ink-2:#6d6355;
-  --ink-3:#9d9384;
-  --line:rgba(43,38,32,.12);
-  --line-2:rgba(43,38,32,.19);
-  --accent:#cd4420;          /* 朱砂（源自"朱红 #ff4c00"，明度压一档） */
-  --accent-2:#e0603a;
-  --accent-ink:#ab3717;
-  --accent-soft:rgba(205,68,32,.09);
-  --accent-line:rgba(205,68,32,.34);
-  --on-accent:#fffcf7;       /* 压在强调色上的文字色 */
-  --amber:#a8791f;
-  --rose:#b3402f;
-  --atm-1:rgba(196,166,116,.11);   /* 纸面的不均匀感，不用彩色光晕 */
-  --atm-2:rgba(170,150,116,.08);
-  --sh-1:0 1px 2px rgba(96,80,52,.07), 0 5px 16px rgba(96,80,52,.06);
+  --bg:#f7f2e7;
+  --surface:#fffdf8;
+  --surface-2:#f8f3e9;
+  --ink:#2a251e;
+  --ink-2:#6b6153;
+  --ink-3:#9c9283;
+  --line:rgba(42,37,30,.13);
+  --line-2:rgba(42,37,30,.20);
+  --accent:#b0392c;          /* 朱砂（宫墙红色相，饱和度提一档） */
+  --accent-2:#c8523f;
+  --accent-ink:#8f2d21;
+  --accent-soft:rgba(176,57,44,.09);
+  --accent-line:rgba(176,57,44,.34);
+  --on-accent:#fffcf6;
+  --amber:#9c7418;
+  --rose:#a83a2c;
+  --atm-1:rgba(198,168,118,.12);
+  --atm-2:rgba(172,152,118,.085);
+  --sh-1:0 1px 2px rgba(96,80,52,.07), 0 5px 16px rgba(96,80,52,.055);
   --sh-2:0 10px 26px rgba(96,80,52,.12), 0 2px 6px rgba(96,80,52,.05);
   --sh-3:0 28px 60px rgba(64,52,32,.24);
-  --code-bg:#f7f1e5;
+  --code-bg:#f8f2e6;
   --code-ink:#4a4034;
-  --r-btn:9px;               /* 按钮小圆角，带点印章的方正感 */
-  --r-mark:8px;              /* 品牌小方块 */
-  /* 书法感：楷体一路（macOS/iOS 的 Kaiti SC、Windows 的楷体、
-     繁体区的 Kaiti TC / 文鼎楷）。设备上都没有时退回宋体，
-     仍比黑体接近"书"的味道；卡片标题也跟这个走。 */
+  --r-btn:8px;               /* 按钮小圆角，印章的方正感 */
+  --r-mark:8px;
+  --type-scale:1.12;         /* 标题、正文整体放大一档 —— "大气"落在这里 */
+  /* 通篇宋体 */
+  --font:"Songti SC","Noto Serif CJK SC","Source Han Serif SC","Noto Serif SC","STSong","SimSun",serif;
+  /* 标题与品牌名用楷体（毛笔感） */
   --font-title:"Kaiti SC","STKaiti","KaiTi","楷体","Kaiti TC","TW-Kai","Songti SC","Noto Serif CJK SC","SimSun",serif;
   --font-display:var(--font-title);
-  /* 宣纸主题的按钮不做实心色块：改成"纸面凸起 + 朱砂描边 + 朱砂字"，
-     像钤在纸上的一枚朱印，而不是贴上去的一张红纸。 */
+  /* 大按钮不做实心色块：纸面凸起 + 朱砂描边 + 朱砂字，像钤在纸上的一枚朱印 */
   --btn-bg:var(--surface);
   --btn-ink:var(--accent-ink);
   --btn-line:var(--accent-line);
 }
 
-/* —— 极简（简约现代 / 互联网前卫）——
-   近白灰底 + 纯黑白灰零彩色 + 发丝分割线 + 黑色胶囊按钮。
-   **字体一律无衬线**：这套是"现代"风格，配书法体是错配（2026-10-10 用户指出）。 */
+/* —— 极简（严格照《风格参考 01 · Minimalism / LUMO》）——
+   参考图的做法：近白灰底 + 纯白贴面的卡片 + **一条发丝线**，没有阴影、没有灰雾；
+   字全用无衬线，靠字重和大留白撑住。所以这套主题的阴影全部归零。 */
 :root[data-theme="jian"]{
-  --bg:#f4f4f2;
+  --bg:#f2f2f0;
   --surface:#ffffff;
-  --surface-2:#f0f0ee;
-  --ink:#131313;
+  --surface-2:#f7f7f5;
+  --ink:#0f0f0f;
   --ink-2:#6a6a66;
   --ink-3:#a3a39e;
-  --line:rgba(19,19,19,.10);
-  --line-2:rgba(19,19,19,.16);
-  --accent:#131313;
-  --accent-2:#2e2e2e;
+  --line:rgba(15,15,15,.09);
+  --line-2:rgba(15,15,15,.14);
+  --accent:#111111;
+  --accent-2:#2b2b2b;
   --accent-ink:#000000;
-  --accent-soft:rgba(19,19,19,.06);
-  --accent-line:rgba(19,19,19,.30);
+  --accent-soft:rgba(15,15,15,.055);
+  --accent-line:rgba(15,15,15,.28);
   --on-accent:#ffffff;
-  --amber:#8a8a85;           /* 极简主题里连置顶星都是灰的，不出现彩色 */
+  --amber:#8a8a85;           /* 零彩色：连置顶星都是灰的 */
   --rose:#7a7a75;
-  --atm-1:rgba(0,0,0,.022);
-  --atm-2:rgba(0,0,0,.016);
-  --sh-1:0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.05);
-  --sh-2:0 12px 32px rgba(0,0,0,.09), 0 2px 6px rgba(0,0,0,.04);
-  --sh-3:0 30px 70px rgba(0,0,0,.18);
-  --code-bg:#f2f2f0;
+  --atm-1:rgba(0,0,0,.014);
+  --atm-2:rgba(0,0,0,.010);
+  --sh-1:0 0 0 rgba(0,0,0,0);      /* 参考图里卡片没有阴影，只有线 */
+  --sh-2:0 0 0 rgba(0,0,0,0);
+  --sh-3:0 34px 80px rgba(0,0,0,.18);   /* 只有阅读浮层用得上 */
+  --code-bg:#f4f4f2;
   --code-ink:#2b2b28;
+  --r-sm:8px;--r-md:12px;--r-lg:16px;--r-xl:20px;
   --r-btn:999px;
   --r-mark:999px;
-  --noise:none;               /* 极简主题不要纸纹，本来就是干净的平面 */
-  --font-title:var(--font);   /* 卡片标题、所有标题一律无衬线 */
-  --font-display:var(--font);
+  --noise:none;
+  --font:var(--font-sans);   /* 明确写出来：这套**不用衬线/书法体** */
+  --font-title:var(--font-sans);
+  --font-display:var(--font-sans);
 }
 
-/* —— 墨夜（极简的暗色版）—— */
+/* —— 柔光（严格照《风格参考 02 · Neumorphism / Mellow》）——
+   浅灰同色底 + 同色凸起面 + 大而柔的双向阴影（左上白光、右下灰影）。
+   要点全在阴影的"大与柔"：偏移要够、模糊要够、对比要低，
+   元素一个不少，层级全靠光影。无衬线 + 黑色胶囊按钮。 */
+:root[data-theme="su"]{
+  --bg:#ebebe9;
+  --surface:#f3f3f1;
+  --surface-2:#e3e3e1;
+  --ink:#2a2a28;
+  --ink-2:#777773;
+  --ink-3:#a4a49f;
+  --line:rgba(26,26,24,.06);       /* 新拟态靠阴影分隔，线只留极淡一层 */
+  --line-2:rgba(26,26,24,.10);
+  --accent:#1b1b19;                /* 黑胶囊 */
+  --accent-2:#333330;
+  --accent-ink:#1b1b19;
+  --accent-soft:rgba(26,26,24,.05);
+  --accent-line:rgba(26,26,24,.16);
+  --on-accent:#f8f8f6;
+  --amber:#8a8a85;
+  --rose:#7c7c78;
+  --atm-1:rgba(255,255,255,.62);   /* 光从左上来 */
+  --atm-2:rgba(146,146,142,.09);
+  --sh-1:6px 6px 14px rgba(160,160,156,.55), -5px -5px 12px rgba(255,255,255,.98);
+  --sh-2:9px 9px 22px rgba(152,152,148,.62), -7px -7px 18px #ffffff;
+  --sh-3:0 24px 58px rgba(108,108,104,.32);
+  --r-sm:14px;
+  --r-md:18px;
+  --r-lg:24px;                     /* 新拟态要够圆，圆角小了就没有"捏出来"的感觉 */
+  --r-xl:30px;
+  --code-bg:#e6e6e4;
+  --code-ink:#3a3a37;
+  --r-btn:999px;
+  --r-mark:999px;
+  --noise:none;
+  --font:var(--font-sans);
+  --font-title:var(--font-sans);
+  --font-display:var(--font-sans);
+}
+
+/* —— 墨夜（柔光的暗色版）—— */
 :root[data-theme="mo"]{
   --bg:#141414;
   --surface:#1d1d1d;
@@ -162,49 +211,16 @@ html:root{
   --r-btn:999px;
   --r-mark:999px;
   --noise:none;
-  --font-title:var(--font);
-  --font-display:var(--font);
+  --font:var(--font-sans);
+  --font-title:var(--font-sans);
+  --font-display:var(--font-sans);
 }
 
-/* —— 素白（新拟态 / Neumorphism）——
-   逆向自用户给的参考图（Mellow 那种）：浅灰同色底 + 同色凸起面 + 双向柔阴影
-   （左上白光、右下灰影）。元素一个没少，只靠"光影"做层级，
-   所以看着是简洁，而不是简陋 —— 这正是用户要的"风格简化"。
-   无衬线字体、黑色胶囊按钮、基本不用边框，靠阴影分隔。 */
-:root[data-theme="su"]{
-  --bg:#e9e9e7;                    /* 底比面暗一档，凸起才看得出来 */
-  --surface:#f4f4f2;
-  --surface-2:#e4e4e2;
-  --ink:#2c2c2a;
-  --ink-2:#787874;
-  --ink-3:#a5a5a0;
-  --line:rgba(28,28,26,.07);       /* 新拟态靠阴影分隔，线只留极淡一层 */
-  --line-2:rgba(28,28,26,.11);
-  --accent:#1c1c1a;                /* 黑胶囊 */
-  --accent-2:#343431;
-  --accent-ink:#1c1c1a;
-  --accent-soft:rgba(28,28,26,.055);
-  --accent-line:rgba(28,28,26,.18);
-  --on-accent:#f7f7f5;
-  --amber:#8a8a85;                 /* 这套主题不出现彩色，连置顶星都是灰的 */
-  --rose:#7c7c78;
-  --atm-1:rgba(255,255,255,.6);     /* 光从左上来 */
-  --atm-2:rgba(150,150,146,.08);
-  --sh-1:5px 5px 12px rgba(168,168,164,.46), -4px -4px 11px rgba(255,255,255,.96);
-  --sh-2:8px 8px 20px rgba(160,160,156,.54), -6px -6px 16px rgba(255,255,255,1);
-  --sh-3:0 24px 58px rgba(112,112,108,.30);
-  --r-sm:12px;
-  --r-md:16px;
-  --r-lg:22px;                     /* 新拟态要够圆，圆角小了就没有"捏出来"的感觉 */
-  --r-xl:28px;
-  --code-bg:#e9e9e7;
-  --code-ink:#3a3a37;
-  --r-btn:999px;
-  --r-mark:999px;
-  --noise:none;
-  --font-title:var(--font);
-  --font-display:var(--font);
-}
+/* 极简主题的卡片没有阴影，得给"指得到"的反馈：
+   悬停时把发丝线换成墨色，比灰雾干净。 */
+:root[data-theme="jian"] .card:hover{border-color:var(--ink);background:var(--surface)}
+:root[data-theme="jian"] .card-more:hover,
+:root[data-theme="jian"] .cat-item:hover{background:rgba(15,15,15,.05)}
 
 /* ---------------- 基础 ---------------- */
 *{box-sizing:border-box}
@@ -334,9 +350,9 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .tdot.on::after{border-color:var(--ink)}
 .tdot:hover{transform:scale(1.1)}
 .tdot:active{transform:scale(.95)}
-.tdot[data-theme="xuan"]{--dot-bg:#f6f1e6;--dot-fg:#cd4420}
-.tdot[data-theme="su"]{--dot-bg:#e4e4e2;--dot-fg:#1c1c1a}
-.tdot[data-theme="jian"]{--dot-bg:#fbfbfa;--dot-fg:#131313}
+.tdot[data-theme="xuan"]{--dot-bg:#f7f2e7;--dot-fg:#b0392c}
+.tdot[data-theme="su"]{--dot-bg:#e3e3e1;--dot-fg:#1b1b19}
+.tdot[data-theme="jian"]{--dot-bg:#fbfbfa;--dot-fg:#111111}
 .tdot[data-theme="mo"]{--dot-bg:#1d1d1d;--dot-fg:#e6e3dc}
 
 /* 手机端抽屉侧栏的遮罩：桌面档不显示（侧栏本来就在页面上） */
@@ -350,7 +366,7 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 }
 .topbar-title{min-width:0;flex:none;max-width:34%}
 .topbar-title h1{
-  margin:0;font-size:23px;font-weight:600;letter-spacing:-.2px;font-family:var(--font-display);
+  margin:0;font-size:calc(23px * var(--type-scale));font-weight:600;letter-spacing:-.2px;font-family:var(--font-display);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 .topbar-title p{margin:3px 0 0;font-size:12.5px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -642,14 +658,14 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .reader-panel.rs-2{width:100vw;height:100vh;min-height:0;max-height:none;border-radius:0;box-shadow:none}
 .reader-panel.rs-2 .reader-bar{padding:14px 26px 14px 32px}
 .reader-panel.rs-2 .reader-inner{max-width:1060px;padding:42px 52px 96px}
-.reader-panel.rs-2 .reader-head h2{font-size:30px}
+.reader-panel.rs-2 .reader-head h2{font-size:calc(30px * var(--type-scale))}
 
 .reader-scroll{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;
   transition:opacity .26s var(--ease);scroll-behavior:smooth}
 .reader-inner{max-width:760px;margin:0 auto;padding:32px 42px 64px}
 
 .reader-head{padding-bottom:20px;border-bottom:1px solid var(--line);margin-bottom:26px}
-.reader-head h2{margin:0;font-size:28px;font-weight:600;line-height:1.4;letter-spacing:-.2px;font-family:var(--font-display)}
+.reader-head h2{margin:0;font-size:calc(28px * var(--type-scale));font-weight:600;line-height:1.4;letter-spacing:-.2px;font-family:var(--font-display)}
 .reader-meta{margin-top:12px;display:flex;align-items:center;gap:9px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-3)}
 .reader-meta .dot{width:3px;height:3px;border-radius:50%;background:var(--ink-3);opacity:.6}
 .reader-meta .tag{font-size:11.5px}
@@ -663,7 +679,7 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .reader-foot .danger:hover{color:var(--rose);background:color-mix(in srgb,var(--rose) 10%,transparent)}
 
 /* ---------------- Markdown 排版（中文长文阅读的把持在这里） ---------------- */
-.md{--fs:16.6px;font-size:var(--fs);line-height:1.94;color:var(--ink);word-wrap:break-word}
+.md{--fs:calc(16.6px * var(--type-scale));font-size:var(--fs);line-height:1.94;color:var(--ink);word-wrap:break-word}
 .md > *:first-child{margin-top:0}
 .md > *:last-child{margin-bottom:0}
 .md p{margin:0 0 1.05em}
@@ -1044,7 +1060,7 @@ mark.hit{background:color-mix(in srgb,var(--amber) 30%,transparent);color:inheri
   .side-foot-btn{padding:10px 9px}
   .topbar{padding:14px 16px 8px;gap:10px}
   .topbar-title{max-width:20%}
-  .topbar-title h1{font-size:20px}
+  .topbar-title h1{font-size:calc(20px * var(--type-scale))}
   .search-wrap{max-width:320px}
   .board{padding:0 20px 8px}
   .board-tools{padding:4px 20px 10px;gap:10px}
@@ -1068,7 +1084,7 @@ mark.hit{background:color-mix(in srgb,var(--amber) 30%,transparent);color:inheri
   .reader-inner,
   .reader-panel.rs-1 .reader-inner,
   .reader-panel.rs-2 .reader-inner{max-width:820px;padding:24px 28px calc(48px + var(--sab,0px))}
-  .reader-panel.rs-2 .reader-head h2{font-size:27px}
+  .reader-panel.rs-2 .reader-head h2{font-size:calc(27px * var(--type-scale))}
   .modal-panel{width:min(860px,100%)}
 }
 
@@ -1131,7 +1147,7 @@ mark.hit{background:color-mix(in srgb,var(--amber) 30%,transparent);color:inheri
     padding:calc(12px + var(--sat,0px)) calc(18px + var(--sar,0px)) 10px calc(18px + var(--sal,0px));
   }
   .topbar-title{order:1;flex:1;max-width:none;min-width:0}
-  .topbar-title h1{font-size:20px}
+  .topbar-title h1{font-size:calc(20px * var(--type-scale))}
   .topbar-actions{order:2;gap:8px}
   .icon-btn{width:44px;height:44px;border-radius:14px}
   .seg button{width:42px;height:40px}
@@ -1176,7 +1192,7 @@ mark.hit{background:color-mix(in srgb,var(--amber) 30%,transparent);color:inheri
   }
   .icon-btn{width:44px;height:44px;border-radius:13px}
   .topbar-title{order:1;flex:1;min-width:0;max-width:none}
-  .topbar-title h1{font-size:17px}
+  .topbar-title h1{font-size:calc(17px * var(--type-scale))}
   .topbar-title p{display:none}                     /* 卡片数量挪到工具条，别占顶栏 */
   .topbar-actions{order:2;gap:8px}
   .topbar-actions .primary-btn{width:44px;height:44px;padding:0;justify-content:center;border-radius:13px}
@@ -1256,8 +1272,8 @@ mark.hit{background:color-mix(in srgb,var(--amber) 30%,transparent);color:inheri
   .reader-panel.rs-1 .reader-inner,
   .reader-panel.rs-2 .reader-inner{max-width:100%;padding:18px 16px calc(56px + var(--sab,0px))}
   .reader-head{padding-bottom:15px;margin-bottom:18px}
-  .reader-head h2{font-size:21px;line-height:1.38}
-  .reader-panel.rs-2 .reader-head h2{font-size:21px}
+  .reader-head h2{font-size:calc(21px * var(--type-scale));line-height:1.38}
+  .reader-panel.rs-2 .reader-head h2{font-size:calc(21px * var(--type-scale))}
   .reader-meta{margin-top:9px;gap:7px;font-size:12px}
   .reader-foot{
     margin-top:26px;padding-top:14px;padding-bottom:2px;gap:8px;
@@ -1269,7 +1285,7 @@ mark.hit{background:color-mix(in srgb,var(--amber) 30%,transparent);color:inheri
   .reader-foot::-webkit-scrollbar{display:none}
   .reader-foot .ghost-btn{height:40px;padding:0 14px;flex:none}
   .reader-foot .ghost-btn[data-act="delete"]{margin-left:0!important}
-  .md{--fs:16.2px;line-height:1.88}
+  .md{--fs:calc(16.2px * var(--type-scale));line-height:1.88}
   .md h2{font-size:1.2em}
   .md img{margin:1em auto}
   .md .katex{font-size:1em}
