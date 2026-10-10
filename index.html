@@ -6,14 +6,15 @@
 <title>卡片笔记</title>
 <script>
 /* 在样式加载之前就把主题定下来，避免打开时先闪一下默认配色。
-   老版本存的是已经删掉的配色名（qing/dai/zhu/shu…），这里做一次迁移，认不出就回宣纸。
+   老版本存的是已经删掉的配色名（qing/dai/zhu/shu/su…），这里做一次迁移，认不出就回宣纸。
    顺便把"浏览器界面色"（手机/平板顶上那条状态栏）也一起定好 —— 它以前是写死的旧青绿。 */
 (function(){
-  var META={xuan:'#f7f2e7',su:'#ebebe9',jian:'#f2f2f0',mo:'#141414'};
+  var META={xuan:'#f7f2e7',li:'#f1f4fa',jian:'#f2f2f0',mo:'#141414'};
   var t='xuan';
   try{
-    var ok={xuan:1,su:1,jian:1,mo:1};
+    var ok={xuan:1,li:1,jian:1,mo:1};
     t=localStorage.getItem('cn.theme');
+    if(t==='su') t='li';                 /* 上一版的"柔光"改成了"琉璃" */
     if(!ok[t]) t='xuan';
     localStorage.setItem('cn.theme',t);
   }catch(e){ t='xuan'; }
@@ -33,8 +34,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="卡片笔记">
-<link rel="icon" href="icon-192.png">
-<link rel="apple-touch-icon" href="icon-180.png">
+<!-- 图标带版本号：浏览器的图标缓存与 Service Worker 的图标缓存是两套，
+     不带查询串的话手机上会一直用旧的那张青绿图标 -->
+<link rel="icon" href="icon-192.png?v=9">
+<link rel="apple-touch-icon" href="icon-180.png?v=9">
 <!-- 用相对路径，这样放在 GitHub Pages 子目录下也能正常加载 -->
 <link rel="stylesheet" href="lib/katex.min.css">
 <link rel="stylesheet" href="lib/hljs-github.css">
@@ -99,7 +102,7 @@
           <span class="theme-label">外观</span>
           <div class="theme-dots" id="themeDots">
             <button class="tdot" data-theme="xuan" title="宣纸（古典纸质）" aria-label="宣纸"></button>
-            <button class="tdot" data-theme="su" title="柔光（新拟态）" aria-label="柔光"></button>
+            <button class="tdot" data-theme="li" title="琉璃（玻璃质感）" aria-label="琉璃"></button>
             <button class="tdot" data-theme="jian" title="极简（黑白灰）" aria-label="极简"></button>
             <button class="tdot" data-theme="mo" title="墨夜（暗色）" aria-label="墨夜"></button>
           </div>
