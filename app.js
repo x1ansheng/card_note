@@ -9,7 +9,7 @@
   var R = window.NoteRender;
 
   // 界面版本号：手机上用它确认是不是拿到了最新代码
-  var APP_VERSION = '2026-10-09-1';
+  var APP_VERSION = '2026-10-10-1';
 
   var PALETTE = ['#4b8dff', '#f4a83b', '#8b7cf6', '#12b8a6', '#f2708c', '#2fb3e8', '#5cc98a', '#ee8455'];
 
@@ -423,6 +423,8 @@
       var sumEl = main.querySelector('.card-sum');
       if (card._snippet) {
         sumEl.textContent = card._snippet;
+        // 列表视图平时只显示标题，搜索命中时把这段正文显示出来
+        el.classList.add('has-snippet');
       } else {
         sumEl.textContent = card.summary || '（还没有内容）';
       }
