@@ -9,15 +9,15 @@
   var R = window.NoteRender;
 
   // 界面版本号：手机上用它确认是不是拿到了最新代码
-  var APP_VERSION = '2026-10-10-3';
+  var APP_VERSION = '2026-10-10-4';
 
   /* 分类颜色跟着主题走：
      宣纸用传统矿物色并整体压暗（赭石/花青/藤黄/胭脂/松绿/黛…），和纸感统一；
-     极简用灰阶，不出现任何彩色；
-     墨夜用压在深底上也看得清的浅灰褐。
+     素白 / 极简用灰阶，不出现任何彩色；墨夜用压在深底上也看得清的浅灰褐。
      —— 上一版是六七个鲜亮的糖果色，在纸感底子上很跳，用户明确说"和背景冲突"。 */
   var PALETTES = {
     xuan: ['#8c5a3c', '#4f6b74', '#96702a', '#8f4453', '#556b4d', '#5a5f78', '#8a5a5a', '#6b6a3f'],
+    su:   ['#2c2c2a', '#4a4a47', '#63635f', '#7c7c78', '#949490', '#3a3a37', '#6a6a66', '#8c8c88'],
     jian: ['#2f2f2f', '#5a5a56', '#7d7d78', '#3f3f3c', '#6a6a65', '#4a4a46', '#8a8a85', '#222220'],
     mo: ['#c8bda8', '#a9b6bd', '#c9b489', '#c2a0a6', '#a8bdad', '#b3b3bd', '#c6ab9c', '#bdb6a0']
   };
@@ -42,12 +42,18 @@
     { key: 'rs-2', label: '全屏', fs: 18.6 }
   ];
 
-  /* ---------------- 主题（三套配色，侧栏底部切换，记住选择） ---------------- */
-  var THEMES = { xuan: 1, jian: 1, mo: 1 };
+  /* ---------------- 主题（四套配色，侧栏底部切换，记住选择） ---------------- */
+  /* 每套主题对应的浏览器界面色（手机/平板顶上那条状态栏、地址栏的颜色）。
+     这里以前是 index.html 里写死的 <meta name="theme-color" content="#12b8a6">，
+     换主题它不跟着变 —— 手机上永远是顶上一道旧青绿。现在跟着主题走。 */
+  var THEME_META = { xuan: '#f6f1e6', su: '#e9e9e7', jian: '#f4f4f2', mo: '#141414' };
+  var THEMES = { xuan: 1, su: 1, jian: 1, mo: 1 };
   function applyTheme(t) {
     if (!THEMES[t]) t = 'xuan';
     document.documentElement.dataset.theme = t;
     try { localStorage.setItem('cn.theme', t); } catch (e) { /* 隐私模式写不进就算了 */ }
+    var mt = document.querySelector('meta[name="theme-color"]');
+    if (mt) mt.setAttribute('content', THEME_META[t] || THEME_META.xuan);
     $$('#themeDots .tdot').forEach(function (b) { b.classList.toggle('on', b.dataset.theme === t); });
     // 分类颜色是跟着主题走的一套色，换主题要重新映射并重画
     if (state.categories.length) refreshColors();
@@ -262,7 +268,7 @@
       b.dataset.cat = name;
       b.innerHTML =
         (color ? '<span class="cat-dot" style="background:' + color + '"></span>'
-               : '<span class="cat-dot" style="background:linear-gradient(135deg,#3ad2bd,#12b8a6)"></span>') +
+               : '<span class="cat-dot" style="background:var(--accent)"></span>') +
         '<span class="cat-name"></span>' +
         '<span class="cat-count">' + count + '</span>' +
         (name === '__all__' ? '' : '<span class="cat-more" data-more="' + name + '" title="重命名 / 删除">' + svgIcon('i-menu') + '</span>');
@@ -359,17 +365,19 @@
     board.appendChild(el);
   }
 
+  /* 空状态插画：颜色全部交给 style.css 的 .empty-art 系列规则（走语义变量），
+     JS 里不再写死任何色值 —— 以前这里写死了青绿，四套主题下都泛蓝。 */
   function emptyArt() {
     return '<svg class="empty-art" viewBox="0 0 120 120" fill="none">' +
-      '<rect x="18" y="26" width="66" height="80" rx="10" fill="#eef6f8"/>' +
-      '<rect x="28" y="18" width="66" height="80" rx="10" fill="#ffffff" stroke="#e2eef2" stroke-width="2"/>' +
-      '<circle cx="44" cy="40" r="6" fill="#bfe9e2"/>' +
-      '<rect x="56" y="36" width="26" height="5" rx="2.5" fill="#dbe9ee"/>' +
-      '<rect x="40" y="56" width="42" height="5" rx="2.5" fill="#e8f1f5"/>' +
-      '<rect x="40" y="69" width="34" height="5" rx="2.5" fill="#e8f1f5"/>' +
-      '<rect x="40" y="82" width="24" height="5" rx="2.5" fill="#e8f1f5"/>' +
-      '<circle cx="96" cy="86" r="15" fill="#12b8a6"/>' +
-      '<path d="M96 79v14M89 86h14" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/>' +
+      '<rect x="18" y="26" width="66" height="80" rx="10"/>' +
+      '<rect x="28" y="18" width="66" height="80" rx="10" stroke-width="2"/>' +
+      '<circle cx="44" cy="40" r="6"/>' +
+      '<rect x="56" y="36" width="26" height="5" rx="2.5"/>' +
+      '<rect x="40" y="56" width="42" height="5" rx="2.5"/>' +
+      '<rect x="40" y="69" width="34" height="5" rx="2.5"/>' +
+      '<rect x="40" y="82" width="24" height="5" rx="2.5"/>' +
+      '<circle cx="96" cy="86" r="15"/>' +
+      '<path d="M96 79v14M89 86h14" stroke-width="2.6" stroke-linecap="round"/>' +
       '</svg>';
   }
 
