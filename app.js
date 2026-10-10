@@ -9,15 +9,16 @@
   var R = window.NoteRender;
 
   // 界面版本号：手机上用它确认是不是拿到了最新代码
-  var APP_VERSION = '2026-10-10-5';
+  var APP_VERSION = '2026-10-10-6';
 
   /* 分类颜色跟着主题走：
-     宣纸用传统矿物色并整体压暗（赭石/花青/藤黄/胭脂/松绿/黛…），和纸感统一；
-     素白 / 极简用灰阶，不出现任何彩色；墨夜用压在深底上也看得清的浅灰褐。
+     宣纸用传统矿物色（赭石/花青/藤黄/胭脂/松绿/黛…），和纸感统一；
+     琉璃用参考图那套"珊瑚橙 / 天蓝 / 薄荷绿 / 淡紫"的柔和彩色，压在玻璃上很亮；
+     极简用灰阶，不出现任何彩色；墨夜用压在深底上也看得清的浅灰褐。
      —— 上一版是六七个鲜亮的糖果色，在纸感底子上很跳，用户明确说"和背景冲突"。 */
   var PALETTES = {
     xuan: ['#8c5a3c', '#4f6b74', '#96702a', '#8f4453', '#556b4d', '#5a5f78', '#8a5a5a', '#6b6a3f'],
-    su:   ['#2c2c2a', '#4a4a47', '#63635f', '#7c7c78', '#949490', '#3a3a37', '#6a6a66', '#8c8c88'],
+    li:   ['#e0836a', '#5b8def', '#3fae8a', '#9a7de0', '#c99a3f', '#4aa8c9', '#c96a8e', '#6f8aa6'],
     jian: ['#2f2f2f', '#5a5a56', '#7d7d78', '#3f3f3c', '#6a6a65', '#4a4a46', '#8a8a85', '#222220'],
     mo: ['#c8bda8', '#a9b6bd', '#c9b489', '#c2a0a6', '#a8bdad', '#b3b3bd', '#c6ab9c', '#bdb6a0']
   };
@@ -46,10 +47,15 @@
   /* 每套主题对应的浏览器界面色（手机/平板顶上那条状态栏、地址栏的颜色）。
      这里以前是 index.html 里写死的 <meta name="theme-color" content="#12b8a6">，
      换主题它不跟着变 —— 手机上永远是顶上一道旧青绿。现在跟着主题走。 */
-  var THEME_META = { xuan: '#f7f2e7', su: '#ebebe9', jian: '#f2f2f0', mo: '#141414' };
-  var THEMES = { xuan: 1, su: 1, jian: 1, mo: 1 };
+  var THEME_META = { xuan: '#f7f2e7', li: '#f1f4fa', jian: '#f2f2f0', mo: '#141414' };
+  var THEMES = { xuan: 1, li: 1, jian: 1, mo: 1 };
   function applyTheme(t) {
-    if (!THEMES[t]) t = 'xuan';
+    if (!THEMES[t]) {
+      // 认不出的主题名一律回落到宣纸，但**要出声**：静默回落踩过坑 ——
+      // 改主题名时漏改了一处调用，页面看着"正常"，其实一直在用宣纸，很难发现。
+      if (window.console && console.warn) console.warn('[卡片笔记] 未知主题「' + t + '」，已回落到宣纸');
+      t = 'xuan';
+    }
     document.documentElement.dataset.theme = t;
     try { localStorage.setItem('cn.theme', t); } catch (e) { /* 隐私模式写不进就算了 */ }
     var mt = document.querySelector('meta[name="theme-color"]');
