@@ -9,7 +9,7 @@
    老版本存的是已经删掉的配色名（qing/dai/zhu/shu…），这里做一次迁移，认不出就回宣纸。
    顺便把"浏览器界面色"（手机/平板顶上那条状态栏）也一起定好 —— 它以前是写死的旧青绿。 */
 (function(){
-  var META={xuan:'#f6f1e6',su:'#e9e9e7',jian:'#f4f4f2',mo:'#141414'};
+  var META={xuan:'#f7f2e7',su:'#ebebe9',jian:'#f2f2f0',mo:'#141414'};
   var t='xuan';
   try{
     var ok={xuan:1,su:1,jian:1,mo:1};
@@ -29,10 +29,11 @@
 })();
 </script>
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#f6f1e6">
+<meta name="theme-color" content="#f7f2e7">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="卡片笔记">
+<link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-180.png">
 <!-- 用相对路径，这样放在 GitHub Pages 子目录下也能正常加载 -->
 <link rel="stylesheet" href="lib/katex.min.css">
@@ -98,8 +99,8 @@
           <span class="theme-label">外观</span>
           <div class="theme-dots" id="themeDots">
             <button class="tdot" data-theme="xuan" title="宣纸（古典纸质）" aria-label="宣纸"></button>
-            <button class="tdot" data-theme="su" title="素白（新拟态）" aria-label="素白"></button>
-            <button class="tdot" data-theme="jian" title="极简（简约现代）" aria-label="极简"></button>
+            <button class="tdot" data-theme="su" title="柔光（新拟态）" aria-label="柔光"></button>
+            <button class="tdot" data-theme="jian" title="极简（黑白灰）" aria-label="极简"></button>
             <button class="tdot" data-theme="mo" title="墨夜（暗色）" aria-label="墨夜"></button>
           </div>
         </div>
