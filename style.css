@@ -1,10 +1,13 @@
 /* ==================================================================
    卡片笔记 · 样式（2026-10-10 重构）
-   调性：静读书房 · 纸感 —— 温暖的纸面底、墨感的字、柔和圆角、
-        发丝边框、克制的阴影。参考 DeepSeek 的安静 + 百词斩的卡片亲和力，
-        全部力气花在两件事上：扫卡片、长时间读。
-   五种主题：晴山（青）/ 远黛（靛蓝）/ 竹青（绿）/ 秋柿（橙）/ 墨夜（深色），
-        通过 <html data-theme="…"> 切换，组件一律只引用语义变量，不写死颜色。
+   四套主题，通过 <html data-theme="…"> 切换，组件一律只引用语义变量：
+     xuan 宣纸  —— 古典纸质：亮米色纸底 + 纸纹 + 朱砂红 + 楷体（书法感）
+     su   素白  —— 新拟态：浅灰同色凸起、双向柔阴影、无衬线、黑色胶囊按钮
+     jian 极简  —— 扁平黑白灰：发丝分隔线、无阴影、无衬线
+     mo   墨夜  —— 极简的暗色版
+   字体规范（最容易搞错的一条）：`--font-display` 是"标题 / 品牌名"的展示字体，
+   每套主题自己定 —— 古典风格用楷体，现代风格用无衬线。
+   **绝不能把书法体配到现代风格上**，反过来也一样。
    ================================================================== */
 
 /* ---------------- 设计令牌：每套主题只改这一块 ---------------- */
@@ -14,6 +17,10 @@
      设备上没有衬线中文字体时自动退回无衬线，不会乱。 */
   --font-serif: "Songti SC","Noto Serif CJK SC","Source Han Serif SC","Noto Serif SC","STSong","SimSun",serif;
   --mono: "JetBrains Mono","Cascadia Code","Cascadia Mono",Consolas,"SF Mono",Menlo,monospace;
+
+  /* 展示字体：标题、品牌名用它。默认无衬线（现代风格那一档）；
+     宣纸主题会把它换成楷体一类的毛笔感字体。 */
+  --font-display:var(--font);
 
   --r-sm:10px;
   --r-md:14px;
@@ -36,40 +43,66 @@
   --sar:env(safe-area-inset-right,0px);
 }
 
+/* 主按钮的三个部件。
+   为什么要写成 `html:root` 而不是放进上面的 `:root`：
+   宣纸那一块的写法是 `:root, :root[data-theme="xuan"]`，里面那句裸 `:root`
+   会把宣纸的令牌"泄"给所有主题当兜底。素白/极简/墨夜都没写 --btn-*，
+   于是就被宣纸的"纸面按钮"覆盖了（表现：黑胶囊变成浅色纸按钮）。
+   `html:root` 比 `:root` 多一个元素选择器、优先级高一档，
+   而 `:root[data-theme="xuan"]` 又比它高 —— 所以默认值归默认，宣纸仍能覆盖自己。 */
+html:root{
+  --btn-bg:var(--accent);
+  --btn-ink:var(--on-accent);
+  --btn-line:transparent;
+}
+
 /* —— 宣纸（古典纸质，默认）——
-   参考：米色纸底 + 墨黑字 + 朱砂红唯一强调色 + 宋体衬线标题 + 柔和新拟态阴影。
-   分类颜色用传统矿物色（赭石/花青/藤黄/胭脂…）并整体压暗，和纸感统一。 */
+   亮米色纸底 + 纸纹颗粒 + 朱砂红唯一强调色 + 楷体标题 + 柔和新拟态阴影。
+   朱砂的色相出处：中国传统色色卡里的"朱红 #ff4c00"，原注就是"朱砂的颜色"。
+   那个纯色（255,76,0）在纸面上太扎眼，这里保留它的橙调、把明度压一档，
+   得到纸面上看得住的朱砂 —— 是带橙的矿物朱，不是普通的红。
+   分类颜色用传统矿物色（赭石/花青/藤黄/胭脂…），和纸感统一。 */
 :root,:root[data-theme="xuan"]{
-  --bg:#e9e3d5;
-  --surface:#f6f1e7;
-  --surface-2:#efe9dc;
-  --ink:#2a2620;
-  --ink-2:#6b6155;
-  --ink-3:#9c9284;
-  --line:rgba(42,38,32,.13);
-  --line-2:rgba(42,38,32,.20);
-  --accent:#a8412f;          /* 朱砂 */
-  --accent-2:#bd5540;
-  --accent-ink:#8e3324;
-  --accent-soft:rgba(168,65,47,.10);
-  --accent-line:rgba(168,65,47,.38);
-  --on-accent:#fdfaf4;       /* 压在强调色上的文字色 */
+  --bg:#f6f1e6;              /* 纸：比以前亮一档，白天看不发闷 */
+  --surface:#fffdf9;
+  --surface-2:#f8f3e8;
+  --ink:#2b2620;
+  --ink-2:#6d6355;
+  --ink-3:#9d9384;
+  --line:rgba(43,38,32,.12);
+  --line-2:rgba(43,38,32,.19);
+  --accent:#cd4420;          /* 朱砂（源自"朱红 #ff4c00"，明度压一档） */
+  --accent-2:#e0603a;
+  --accent-ink:#ab3717;
+  --accent-soft:rgba(205,68,32,.09);
+  --accent-line:rgba(205,68,32,.34);
+  --on-accent:#fffcf7;       /* 压在强调色上的文字色 */
   --amber:#a8791f;
-  --rose:#a8412f;
-  --atm-1:rgba(150,124,84,.10);   /* 纸面的不均匀感，不用彩色光晕 */
-  --atm-2:rgba(120,104,80,.07);
-  --sh-1:0 1px 2px rgba(90,74,48,.08), 0 6px 18px rgba(90,74,48,.075);
-  --sh-2:0 10px 28px rgba(90,74,48,.13), 0 2px 6px rgba(90,74,48,.06);
-  --sh-3:0 28px 60px rgba(60,48,30,.26);
-  --code-bg:#efe8da;
+  --rose:#b3402f;
+  --atm-1:rgba(196,166,116,.11);   /* 纸面的不均匀感，不用彩色光晕 */
+  --atm-2:rgba(170,150,116,.08);
+  --sh-1:0 1px 2px rgba(96,80,52,.07), 0 5px 16px rgba(96,80,52,.06);
+  --sh-2:0 10px 26px rgba(96,80,52,.12), 0 2px 6px rgba(96,80,52,.05);
+  --sh-3:0 28px 60px rgba(64,52,32,.24);
+  --code-bg:#f7f1e5;
   --code-ink:#4a4034;
   --r-btn:9px;               /* 按钮小圆角，带点印章的方正感 */
   --r-mark:8px;              /* 品牌小方块 */
-  --font-title:var(--font-serif);   /* 卡片标题也用宋体，纸感才统一 */
+  /* 书法感：楷体一路（macOS/iOS 的 Kaiti SC、Windows 的楷体、
+     繁体区的 Kaiti TC / 文鼎楷）。设备上都没有时退回宋体，
+     仍比黑体接近"书"的味道；卡片标题也跟这个走。 */
+  --font-title:"Kaiti SC","STKaiti","KaiTi","楷体","Kaiti TC","TW-Kai","Songti SC","Noto Serif CJK SC","SimSun",serif;
+  --font-display:var(--font-title);
+  /* 宣纸主题的按钮不做实心色块：改成"纸面凸起 + 朱砂描边 + 朱砂字"，
+     像钤在纸上的一枚朱印，而不是贴上去的一张红纸。 */
+  --btn-bg:var(--surface);
+  --btn-ink:var(--accent-ink);
+  --btn-line:var(--accent-line);
 }
 
-/* —— 极简（简约现代）——
-   参考：近白灰底 + 纯黑白灰、零彩色 + 衬线大标题 + 黑色胶囊按钮 + 发丝分割线。 */
+/* —— 极简（简约现代 / 互联网前卫）——
+   近白灰底 + 纯黑白灰零彩色 + 发丝分割线 + 黑色胶囊按钮。
+   **字体一律无衬线**：这套是"现代"风格，配书法体是错配（2026-10-10 用户指出）。 */
 :root[data-theme="jian"]{
   --bg:#f4f4f2;
   --surface:#ffffff;
@@ -97,7 +130,8 @@
   --r-btn:999px;
   --r-mark:999px;
   --noise:none;               /* 极简主题不要纸纹，本来就是干净的平面 */
-  --font-title:var(--font);   /* 极简主题的卡片标题用无衬线，只有大标题才用宋体 */
+  --font-title:var(--font);   /* 卡片标题、所有标题一律无衬线 */
+  --font-display:var(--font);
 }
 
 /* —— 墨夜（极简的暗色版）—— */
@@ -129,6 +163,47 @@
   --r-mark:999px;
   --noise:none;
   --font-title:var(--font);
+  --font-display:var(--font);
+}
+
+/* —— 素白（新拟态 / Neumorphism）——
+   逆向自用户给的参考图（Mellow 那种）：浅灰同色底 + 同色凸起面 + 双向柔阴影
+   （左上白光、右下灰影）。元素一个没少，只靠"光影"做层级，
+   所以看着是简洁，而不是简陋 —— 这正是用户要的"风格简化"。
+   无衬线字体、黑色胶囊按钮、基本不用边框，靠阴影分隔。 */
+:root[data-theme="su"]{
+  --bg:#e9e9e7;                    /* 底比面暗一档，凸起才看得出来 */
+  --surface:#f4f4f2;
+  --surface-2:#e4e4e2;
+  --ink:#2c2c2a;
+  --ink-2:#787874;
+  --ink-3:#a5a5a0;
+  --line:rgba(28,28,26,.07);       /* 新拟态靠阴影分隔，线只留极淡一层 */
+  --line-2:rgba(28,28,26,.11);
+  --accent:#1c1c1a;                /* 黑胶囊 */
+  --accent-2:#343431;
+  --accent-ink:#1c1c1a;
+  --accent-soft:rgba(28,28,26,.055);
+  --accent-line:rgba(28,28,26,.18);
+  --on-accent:#f7f7f5;
+  --amber:#8a8a85;                 /* 这套主题不出现彩色，连置顶星都是灰的 */
+  --rose:#7c7c78;
+  --atm-1:rgba(255,255,255,.6);     /* 光从左上来 */
+  --atm-2:rgba(150,150,146,.08);
+  --sh-1:5px 5px 12px rgba(168,168,164,.46), -4px -4px 11px rgba(255,255,255,.96);
+  --sh-2:8px 8px 20px rgba(160,160,156,.54), -6px -6px 16px rgba(255,255,255,1);
+  --sh-3:0 24px 58px rgba(112,112,108,.30);
+  --r-sm:12px;
+  --r-md:16px;
+  --r-lg:22px;                     /* 新拟态要够圆，圆角小了就没有"捏出来"的感觉 */
+  --r-xl:28px;
+  --code-bg:#e9e9e7;
+  --code-ink:#3a3a37;
+  --r-btn:999px;
+  --r-mark:999px;
+  --noise:none;
+  --font-title:var(--font);
+  --font-display:var(--font);
 }
 
 /* ---------------- 基础 ---------------- */
@@ -183,18 +258,18 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .brand-mark{
   width:38px;height:38px;border-radius:var(--r-mark);flex:none;
   display:grid;place-items:center;color:var(--on-accent);
-  font-family:var(--font-serif);font-weight:600;font-size:18px;
+  font-family:var(--font-display);font-weight:600;font-size:18px;
   background:var(--accent);
   box-shadow:var(--sh-1);
 }
 .brand-text{display:flex;flex-direction:column;line-height:1.25;min-width:0}
-.brand-text b{font-size:16.5px;letter-spacing:.2px;font-weight:700;font-family:var(--font-serif)}
+.brand-text b{font-size:16.5px;letter-spacing:.2px;font-weight:700;font-family:var(--font-display)}
 .brand-text span{font-size:11.5px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 .new-card-btn{
   display:flex;align-items:center;justify-content:center;gap:7px;
-  height:46px;border-radius:var(--r-btn);color:var(--on-accent);font-size:15px;font-weight:600;
-  background:var(--accent);
+  height:46px;border-radius:var(--r-btn);color:var(--btn-ink);font-size:15px;font-weight:600;
+  background:var(--btn-bg);border:1px solid var(--btn-line);
   box-shadow:var(--sh-1);
   transition:transform .18s var(--ease), box-shadow .18s var(--ease), filter .18s;
 }
@@ -259,8 +334,9 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .tdot.on::after{border-color:var(--ink)}
 .tdot:hover{transform:scale(1.1)}
 .tdot:active{transform:scale(.95)}
-.tdot[data-theme="xuan"]{--dot-bg:#e9e3d5;--dot-fg:#a8412f}
-.tdot[data-theme="jian"]{--dot-bg:#f7f7f5;--dot-fg:#131313}
+.tdot[data-theme="xuan"]{--dot-bg:#f6f1e6;--dot-fg:#cd4420}
+.tdot[data-theme="su"]{--dot-bg:#e4e4e2;--dot-fg:#1c1c1a}
+.tdot[data-theme="jian"]{--dot-bg:#fbfbfa;--dot-fg:#131313}
 .tdot[data-theme="mo"]{--dot-bg:#1d1d1d;--dot-fg:#e6e3dc}
 
 /* 手机端抽屉侧栏的遮罩：桌面档不显示（侧栏本来就在页面上） */
@@ -274,7 +350,7 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 }
 .topbar-title{min-width:0;flex:none;max-width:34%}
 .topbar-title h1{
-  margin:0;font-size:23px;font-weight:600;letter-spacing:-.2px;font-family:var(--font-serif);
+  margin:0;font-size:23px;font-weight:600;letter-spacing:-.2px;font-family:var(--font-display);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 .topbar-title p{margin:3px 0 0;font-size:12.5px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -309,12 +385,12 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .seg{display:flex;background:color-mix(in srgb,var(--surface) 88%,transparent);border-radius:13px;padding:3px;box-shadow:var(--sh-1);gap:2px}
 .seg button{width:34px;height:32px;border-radius:10px;display:grid;place-items:center;color:var(--ink-3);transition:.18s}
 .seg button svg{width:16px;height:16px}
-.seg button.on{background:var(--accent);color:var(--on-accent)}
+.seg button.on{background:var(--btn-bg);color:var(--btn-ink);box-shadow:inset 0 0 0 1px var(--btn-line)}
 
 .primary-btn{
   display:inline-flex;align-items:center;gap:7px;height:42px;padding:0 20px;border-radius:var(--r-btn);
-  color:var(--on-accent);font-size:14.5px;font-weight:600;white-space:nowrap;
-  background:var(--accent);
+  color:var(--btn-ink);font-size:14.5px;font-weight:600;white-space:nowrap;
+  background:var(--btn-bg);border:1px solid var(--btn-line);
   box-shadow:var(--sh-1);
   transition:transform .18s var(--ease),box-shadow .18s var(--ease),filter .18s;
 }
@@ -341,7 +417,7 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .tools-right{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--ink-3)}
 .mini-btn{padding:7px 13px;border-radius:10px;font-size:12.5px;color:var(--ink-2);background:color-mix(in srgb,var(--surface) 84%,transparent);box-shadow:var(--sh-1);transition:.16s}
 .mini-btn:hover{color:var(--accent-ink);transform:translateY(-1px)}
-.mini-btn.on{background:var(--accent);color:var(--on-accent)}
+.mini-btn.on{background:var(--btn-bg);color:var(--btn-ink);box-shadow:inset 0 0 0 1px var(--btn-line)}
 
 /* ---------------- 卡片区 ---------------- */
 .board{
@@ -420,9 +496,9 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .card-more:hover{background:var(--accent-soft);color:var(--accent-ink)}
 .sel-badge{
   position:absolute;right:10px;top:10px;width:30px;height:30px;border-radius:9px;z-index:2;
-  display:none;place-items:center;color:var(--on-accent);
-  background:var(--accent);
-  box-shadow:var(--sh-1);
+  display:none;place-items:center;color:var(--btn-ink);
+  background:var(--btn-bg);
+  box-shadow:inset 0 0 0 1px var(--btn-line),var(--sh-1);
 }
 .sel-badge svg{width:15px;height:15px;stroke-width:3}
 .card.selected{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft),var(--sh-2);transform:translateY(-2px)}
@@ -513,12 +589,14 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .empty h3{margin:0;font-size:17px;color:var(--ink-2);font-weight:600}
 .empty p{margin:0;font-size:13.5px;line-height:1.8;max-width:420px}
 .empty .primary-btn{margin-top:16px}
-/* 空状态插画里那个加号圆，让它跟着主题色走 */
-.empty-art circle:last-of-type{fill:var(--accent)}
-:root[data-theme="mo"] .empty-art rect:first-child{fill:#212d36}
-:root[data-theme="mo"] .empty-art rect:nth-child(2){fill:#1a232b;stroke:#2a3947}
-:root[data-theme="mo"] .empty-art rect:nth-child(n+4){fill:#26333f}
-:root[data-theme="mo"] .empty-art circle:first-of-type{fill:#26333f}
+/* 空状态插画：原来在 app.js 里写死了青绿的填充色，四套主题下都泛蓝，跟纸感/灰阶打架。
+   现在整张图只用语义变量，自动适配每一套主题。 */
+.empty-art rect:first-child{fill:var(--surface-2)}
+.empty-art rect:nth-child(2){fill:var(--surface);stroke:var(--line-2)}
+.empty-art circle:first-of-type{fill:var(--accent-soft)}
+.empty-art rect:nth-child(n+4){fill:var(--line)}
+.empty-art circle:last-of-type{fill:var(--btn-bg);stroke:var(--btn-line);stroke-width:1}
+.empty-art path{stroke:var(--btn-ink)}
 
 /* ---------------- 阅读浮层（阅读是这个产品的主角） ---------------- */
 .reader{position:fixed;inset:0;z-index:80;display:grid;place-items:center}
@@ -571,7 +649,7 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .reader-inner{max-width:760px;margin:0 auto;padding:32px 42px 64px}
 
 .reader-head{padding-bottom:20px;border-bottom:1px solid var(--line);margin-bottom:26px}
-.reader-head h2{margin:0;font-size:28px;font-weight:600;line-height:1.4;letter-spacing:-.2px;font-family:var(--font-serif)}
+.reader-head h2{margin:0;font-size:28px;font-weight:600;line-height:1.4;letter-spacing:-.2px;font-family:var(--font-display)}
 .reader-meta{margin-top:12px;display:flex;align-items:center;gap:9px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-3)}
 .reader-meta .dot{width:3px;height:3px;border-radius:50%;background:var(--ink-3);opacity:.6}
 .reader-meta .tag{font-size:11.5px}
@@ -589,7 +667,7 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .md > *:first-child{margin-top:0}
 .md > *:last-child{margin-bottom:0}
 .md p{margin:0 0 1.05em}
-.md h1,.md h2,.md h3,.md h4{line-height:1.45;font-weight:680;letter-spacing:-.2px;position:relative;color:var(--ink);font-family:var(--font-serif)}
+.md h1,.md h2,.md h3,.md h4{line-height:1.45;font-weight:680;letter-spacing:-.2px;position:relative;color:var(--ink);font-family:var(--font-display)}
 .md h1{font-size:1.5em;margin:1.7em 0 .65em}
 /* 小节标题：只用字号 + 一条发丝底线区分，不放任何竖线装饰。
    （2026-10-10：原来在 h2 左边画了一道强调色竖杠，结果和折叠箭头叠在一起，
@@ -1004,17 +1082,22 @@ mark.hit{background:color-mix(in srgb,var(--amber) 30%,transparent);color:inheri
   .search-wrap{order:3;flex-basis:100%;max-width:none;margin-left:0}
 }
 
-/* ---------------- 竖屏（≤1080px）：侧栏收成抽屉 ----------------
+/* ---------------- 竖屏平板（761–1080px，竖着拿）：抽屉 + 全面放大触控尺寸 ----------------
    竖屏本来就只有 700–800px 宽，再让 214px 的侧栏常驻，内容区就被挤得很难看
-   —— 用户明确点出"pad 竖屏太紧凑"。所以竖屏一律把宽度全让给内容，侧栏改成抽屉。
-   （横屏 901px 以上仍然保留常驻侧栏，那里宽度够用。） */
-@media (orientation:portrait) and (max-width:1080px){
-  .only-mobile{display:grid}
+   —— 用户明确点出"pad 竖屏太紧凑"。
+
+   注意（2026-10-10 第二次修，第一次只做了"抽屉 + 两列"就交差了）：
+   光把侧栏收起来不够，**每一条行高、可点区域、字号都要按手机档放大**。
+   竖屏平板的用法和手机高度相似：手指、单手、边走路边翻，所以所有触控热区
+   一律 ≥44px，清单行高比桌面大一档，抽屉也加宽。横屏 901px 以上仍然常驻侧栏。 */
+@media (orientation:portrait) and (min-width:761px) and (max-width:1080px){
+  /* —— 抽屉：加宽、加高每一条 —— */
   .sidebar{
     position:fixed;left:0;top:0;bottom:0;transform:translateX(-102%);
     transition:transform .3s var(--ease);box-shadow:var(--sh-3);
-    background:var(--surface);width:min(320px,84vw);z-index:60;
-    padding:calc(16px + var(--sat,0px)) 14px calc(14px + var(--sab,0px)) 14px;
+    background:var(--surface);width:min(360px,88vw);z-index:60;
+    padding:calc(18px + var(--sat,0px)) 16px calc(16px + var(--sab,0px)) 16px;
+    gap:16px;
   }
   .sidebar.open{transform:none}
   .side-backdrop{
@@ -1024,19 +1107,62 @@ mark.hit{background:color-mix(in srgb,var(--amber) 30%,transparent);color:inheri
     opacity:0;pointer-events:none;transition:opacity .3s var(--ease);
   }
   body.side-open .side-backdrop{opacity:1;pointer-events:auto}
-  /* 触摸设备上，靠 hover 才出现的按钮等于不存在 */
-  .cat-more{opacity:1}
-  .cat-item{padding:12px}
-  .side-foot-btn{padding:11px}
-  .topbar-title{max-width:24%}
-  .search-wrap{max-width:300px}
-  /* 宽度回来了，卡片排两列，别一张占满整屏 */
+  .only-mobile{display:grid}
+  .brand{padding:4px 6px}
+  .brand-mark{width:42px;height:42px;border-radius:12px;font-size:19px}
+  .brand-text b{font-size:17.5px}
+  .brand-text span{font-size:12.5px}
+  .new-card-btn{height:52px;font-size:16px;gap:8px}
+  .new-card-btn svg{width:20px;height:20px}
+  .side-label{font-size:12px;padding:10px 12px 6px}
+  .cat-item{padding:14px 13px;font-size:15.5px;min-height:54px;gap:11px}
+  .cat-count{font-size:12.5px;padding:3px 9px}
+  .cat-more{opacity:1;width:38px;height:38px}
+  .cat-more svg{width:17px;height:17px}
+  .side-add{padding:14px 13px;font-size:14.5px}
+  .side-foot-btn{padding:14px 13px;font-size:14px}
+  .theme-picker{padding:4px 13px 14px}
+  .tdot{width:28px;height:28px}
+  .tdot::before{width:12px;height:12px}
+
+  /* —— 顶栏：一行放不下就折成两行（标题按钮一行 + 整行搜索），和手机一致 —— */
+  .topbar{
+    flex-wrap:wrap;gap:10px;
+    padding:calc(12px + var(--sat,0px)) calc(18px + var(--sar,0px)) 10px calc(18px + var(--sal,0px));
+  }
+  .topbar-title{order:1;flex:1;max-width:none;min-width:0}
+  .topbar-title h1{font-size:20px}
+  .topbar-actions{order:2;gap:8px}
+  .icon-btn{width:44px;height:44px;border-radius:14px}
+  .seg button{width:42px;height:40px}
+  .topbar-actions .primary-btn{height:44px;padding:0 16px}
+  .search-wrap{order:3;flex-basis:100%;max-width:none;margin-left:0}
+  .search-wrap input{height:46px;font-size:15.5px}
+
+  /* —— 工具条：按钮也放大 —— */
+  .board-tools{padding:4px 18px 12px;gap:12px}
+  .sort-wrap select{height:42px;font-size:14px;padding:0 32px 0 15px}
+  .mini-btn{padding:11px 16px;font-size:13.5px;border-radius:12px}
+
+  /* —— 卡片墙：宽度够，维持两列，但内边距和字号向手机靠 —— */
   .board{padding:0 18px 8px}
-  .board.grid{--card-min:262px;gap:14px}
-  .board.d-xs{--card-min:214px}
-  .board.d-s{--card-min:246px}
-  .board.d-l{--card-min:340px}
-  .board.d-xl{--card-min:430px}
+  .board.grid{--card-min:280px;gap:16px}
+  .board.d-xs{--card-min:228px}
+  .board.d-s{--card-min:262px}
+  .board.d-l{--card-min:360px}
+  .board.d-xl{--card-min:452px}
+  .card{padding:17px 18px 15px 21px}
+  .card-more{width:38px;height:38px;right:8px;top:8px}
+
+  /* —— 清单视图：一行至少 62px，手指点得准；类别标签保留（宽度够） —— */
+  .board.list .card{min-height:62px;padding:13px 50px 13px 16px}
+  .board.list .card-title{font-size:16.5px}
+  .board.list .card.has-snippet .card-sum{font-size:13.4px}
+
+  /* —— 阅读页：按钮热区也放大（面板本身在这一档已经是全屏） —— */
+  .reader-bar{padding:calc(10px + var(--sat,0px)) 12px 10px 18px;gap:10px}
+  .icon-btn.sm{width:40px;height:40px;border-radius:12px}
+  .reader-foot .ghost-btn{height:42px;padding:0 16px}
 }
 
 /* ---------------- 手机档：≤760px ---------------- */
