@@ -2,9 +2,10 @@
    卡片笔记 · 样式（2026-10-10 重构）
    四套主题，通过 <html data-theme="…"> 切换，组件一律只引用语义变量：
      xuan 宣纸  —— 古典纸质：亮米色纸底 + 纸纹 + 朱砂红 + 楷体（书法感）
-     su   素白  —— 新拟态：浅灰同色凸起、双向柔阴影、无衬线、黑色胶囊按钮
+     li   琉璃  —— 玻璃拟态：白玻璃 + 模糊 + 斜向高光（科技风）
      jian 极简  —— 扁平黑白灰：发丝分隔线、无阴影、无衬线
-     mo   墨夜  —— 极简的暗色版
+     qing 清透  —— 玻璃拟态 × 柔性拟态：浅灰底 + 柔光 + 轻玻璃 + 双向软阴影
+                   （2026-10-10 晚新增；墨夜 mo 已按用户要求删除）
    字体规范（最容易搞错的一条）：`--font-display` 是"标题 / 品牌名"的展示字体，
    每套主题自己定 —— 古典风格用楷体，现代风格用无衬线。
    **绝不能把书法体配到现代风格上**，反过来也一样。
@@ -50,10 +51,9 @@
 /* 主按钮的三个部件。
    为什么要写成 `html:root` 而不是放进上面的 `:root`：
    宣纸那一块的写法是 `:root, :root[data-theme="xuan"]`，里面那句裸 `:root`
-   会把宣纸的令牌"泄"给所有主题当兜底。素白/极简/墨夜都没写 --btn-*，
-   于是就被宣纸的"纸面按钮"覆盖了（表现：黑胶囊变成浅色纸按钮）。
-   `html:root` 比 `:root` 多一个元素选择器、优先级高一档，
-   而 `:root[data-theme="xuan"]` 又比它高 —— 所以默认值归默认，宣纸仍能覆盖自己。 */
+   会把宣纸的令牌"泄"给所有主题当兜底。琉璃/极简/清透都写了自己的值，
+   但默认值仍必须放在 `html:root`（比裸 `:root` 多一个元素选择器、优先级高一档），
+   这样没写的主题不至于被宣纸的"纸面按钮"覆盖（表现：黑胶囊变成浅色纸按钮）。 */
 html:root{
   --btn-bg:var(--accent);
   --btn-ink:var(--on-accent);
@@ -372,37 +372,470 @@ html:root{
   :root[data-theme="li"]{--bg:#eef2f8}
 }
 
-/* —— 墨夜（暗色）—— */
-:root[data-theme="mo"]{
-  --bg:#141414;
-  --surface:#1d1d1d;
-  --surface-2:#252525;
-  --ink:#ebe9e4;
-  --ink-2:#a5a39d;
-  --ink-3:#74726c;
-  --line:rgba(235,233,228,.10);
-  --line-2:rgba(235,233,228,.16);
-  --accent:#e6e3dc;          /* 暗色下强调色反过来用象牙白 */
-  --accent-2:#ffffff;
-  --accent-ink:#f2f0ea;
-  --accent-soft:rgba(235,233,228,.09);
-  --accent-line:rgba(235,233,228,.30);
-  --on-accent:#141414;       /* 亮按钮上压深字 */
-  --amber:#c9a86a;
-  --rose:#c98a8a;
-  --atm-1:rgba(235,233,228,.025);
-  --atm-2:rgba(235,233,228,.018);
-  --sh-1:0 1px 2px rgba(0,0,0,.34), 0 6px 20px rgba(0,0,0,.28);
-  --sh-2:0 12px 32px rgba(0,0,0,.44), 0 2px 6px rgba(0,0,0,.30);
-  --sh-3:0 30px 72px rgba(0,0,0,.58);
-  --code-bg:#1a1a1a;
-  --code-ink:#c2c8cc;
-  --r-btn:999px;
-  --r-mark:999px;
+/* —— 清透（玻璃拟态 × 柔性拟态 / Glassmorphism + Soft UI）——
+   参考：用户给的 6 张「清透质感 UI」参考图 + 2 张真·玻璃拟态参考（Pink Sky 卡 / 音量胶囊）。
+   用户的验收文案（原话）：
+   "做玻璃拟态 UI 还在堆透明度？大错特错！3 招搞定通透高级感：
+    第一，半透 + 模糊，让玻璃呼吸；第二，细描边 + 弱阴影，强化质感；第三，信息做减法。"
+   三条落地：
+   1) **让玻璃真能透**：底是三团很淡的柔光（蓝/粉/薄荷，alpha .20–.26），玻璃面白度 .38–.64 + blur 14–30px；
+      2026-10-11 用户二次反馈"过渡色彩影响阅读"后，把五团浓光收成三团淡光、白度整体提回来一档 ——
+      **彩色只许出现在边缘、不许出现在文字下面**；
+   2) **细描边 + 弱阴影**：1px 半透明白描边（不用厚高光棱边），阴影只用 --glass-soft；
+   3) **信息做减法**：分类只留灰色小字（不再放彩色圆点），时间压到最淡，不跟标题抢注意力。
+   与琉璃的区别（避免做重）：琉璃是"科技风厚玻璃"——蓝点缀 + 斜向高光棱边 + 四角浓光斑；
+   清透是"柔光粉彩薄玻璃"——无彩色按钮、细描边、弱阴影、彩光只在页面的边上。 */
+:root[data-theme="qing"]{
+  --bg:#eef0f5;
+  --glass-hi:rgba(255,255,255,.58);     /* 玻璃面渐变的高处（上沿接光） */
+  --glass-lo:rgba(255,255,255,.38);     /* 玻璃面渐变的低处 */
+  --glass-line:rgba(255,255,255,.62);   /* 1px 细描边 */
+  --glass-soft:0 2px 6px rgba(31,45,66,.035), 0 10px 30px rgba(31,45,66,.055); /* 弱阴影 */
+  --surface:rgba(255,255,255,.72);      /* 没单独改造的组件：半透白 */
+  --surface-2:#f3f3f5;
+  --ink:#1c1c1e;
+  --ink-2:#6e6e73;
+  --ink-3:#9c9ca3;
+  --line:rgba(28,28,30,.08);
+  --line-2:rgba(28,28,30,.15);
+  --accent:#1c1c1e;                     /* 强调 = 黑（参考图里的 + 按钮、Home 图标） */
+  --accent-2:#3b7cf6;                   /* 点缀蓝：只给链接、悬停、复选框这类小地方 */
+  --accent-ink:#1c1c1e;
+  --accent-soft:rgba(28,28,30,.055);
+  --accent-line:rgba(28,28,30,.24);
+  --on-accent:#ffffff;
+  --amber:#e29a3c;
+  --rose:#e06a6a;
+  --atm-1:rgba(255,255,255,0);
+  --atm-2:rgba(255,255,255,0);          /* 角落柔光交给 body::before 那一层 */
+  --sh-1:var(--glass-soft);
+  --sh-2:0 4px 10px rgba(31,45,66,.05), 0 18px 46px rgba(31,45,66,.09);
+  --sh-3:0 30px 80px rgba(31,45,66,.18);
+  --code-bg:#f4f4f6;
+  --code-ink:#3c3c42;
+  --r-sm:12px;
+  --r-md:18px;
+  --r-lg:28px;                          /* 卡片圆角：参考图里卡片都是"大圆角" */
+  --r-xl:34px;
+  --r-btn:999px;                        /* 按钮全走胶囊（参考图里没有直角按钮） */
+  --r-mark:50%;
   --noise:none;
   --font:var(--font-sans);
   --font-title:var(--font-sans);
   --font-display:var(--font-sans);
+  /* 主按钮（黑胶囊）写在**主题根级**：.seg button.on / .mini-btn.on / .sel-badge
+     也引用 --btn-*，只覆盖 .new-card-btn 会让它们漏成别的颜色（琉璃踩过的坑）。 */
+  --btn-bg:#1c1c1e;
+  --btn-ink:#ffffff;
+  --btn-line:rgba(28,28,30,0);
+}
+
+/* 清透的底：一层极淡的垂直光影，叠**三团很淡的柔光**（用户 2026-10-11 反馈：
+   "减少一点过渡色彩，有些影响阅读了；可以有渐变色，但应该淡、少"）。
+   所以从五团浓一点（alpha .38–.62）收成三团淡的（.20–.26）、模糊加大到 70px ——
+   左上蓝 / 右上粉 / 左下薄荷，右下和中间保持安静（阅读区要稳）。 */
+:root[data-theme="qing"] body{
+  background-image:linear-gradient(180deg,#f2f3f7 0%,#e9ebf1 100%);
+}
+
+:root[data-theme="qing"] body::before{
+  content:"";position:fixed;inset:-12%;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(42% 36% at 12% 4%, rgba(120,170,255,.26), transparent 72%),
+    radial-gradient(40% 34% at 90% 8%, rgba(255,150,190,.24), transparent 74%),
+    radial-gradient(40% 36% at 6% 94%, rgba(110,212,190,.20), transparent 74%);
+  filter:blur(70px) saturate(1.05);
+}
+
+/* —— 清透的元素级改造（换主题 ≠ 换配色，元素做法整体重来）——
+   两件要记住的事：
+   1) 卡片尺寸档（d-xs…d-full）是功能，**不覆盖它们的 padding / gap**，
+      下面 .card 规则只改"质感"（背景/圆角/阴影），不写 padding。
+   2) 卡片选择器用 `.board .card` 拉高优先级：密度档也写 border-radius，
+      只写 `:root[data-theme="qing"] .card` 会被 `.board.d-xs .card` 按源顺序压掉。
+   状态类（.selected/.on）必须显式重写一遍：基类的选中态特异性低，
+   会被这里的高优先级背景覆盖，选中就"看不见"了。 */
+
+/* 卡片 = **真玻璃**：半透 + 模糊（背后的粉彩要透出来）+ 1px 细白描边 + 弱阴影。
+   刻意不做：厚高光棱边、inset 白色高光线 —— 那些是"磨砂白板"的做法；
+   玻璃的透亮感来自"看得见背后"，擦掉它们玻璃才呼吸。 */
+:root[data-theme="qing"] .board .card{
+  background:linear-gradient(180deg,var(--glass-hi) 0%,var(--glass-lo) 100%);
+  border:1px solid var(--glass-line);
+  border-radius:28px;
+  box-shadow:var(--glass-soft);
+  -webkit-backdrop-filter:blur(20px) saturate(1.6);
+  backdrop-filter:blur(20px) saturate(1.6);
+  transition:transform .28s var(--ease), box-shadow .28s var(--ease), border-color .28s, background .28s;
+}
+:root[data-theme="qing"] .board .card::before{display:none}   /* 删掉分类色竖条 */
+:root[data-theme="qing"] .board .card:hover{
+  background:linear-gradient(180deg,rgba(255,255,255,.70) 0%,rgba(255,255,255,.42) 100%);
+  border-color:rgba(255,255,255,.88);
+  box-shadow:0 4px 10px rgba(31,45,66,.05), 0 18px 46px rgba(31,45,66,.09);
+}
+:root[data-theme="qing"] .board .card.selected{
+  border-color:rgba(28,28,30,.28);
+  box-shadow:0 0 0 3px rgba(28,28,30,.07), 0 4px 10px rgba(31,45,66,.05), 0 18px 46px rgba(31,45,66,.09);
+}
+:root[data-theme="qing"] .board .card.selected::before{display:none}
+
+/* 卡片的留白按尺寸档分别放大（不破坏密度功能：每档各写一条，
+   通用那条优先级低于档位那条，所以档位说了算）。参考图的卡片留白都很足。 */
+:root[data-theme="qing"] .board .card{padding:20px 22px 17px}
+:root[data-theme="qing"] .board.d-xs .card{padding:15px 16px 13px;border-radius:22px}
+:root[data-theme="qing"] .board.d-s .card{padding:17px 19px 15px;border-radius:24px}
+:root[data-theme="qing"] .board.d-l .card{padding:23px 25px 19px;border-radius:30px}
+:root[data-theme="qing"] .board.d-xl .card{padding:27px 30px 22px;border-radius:32px}
+:root[data-theme="qing"] .board.d-full .card{padding:32px 38px 25px;border-radius:34px}
+:root[data-theme="qing"] .board.d-full .card::before{display:none}
+
+/* 分类标签：只留灰色小字（**不放彩色圆点** —— 用户原话：加那个点"反而不好看"）。
+   信息做减法：分类、时间都压到最淡，不跟标题抢注意力。 */
+:root[data-theme="qing"] .card-cat{
+  background:none;padding:0;
+  color:var(--ink-3);font-weight:500;font-size:11.5px;letter-spacing:.2px;
+}
+:root[data-theme="qing"] .card-date{font-size:11px;color:var(--ink-3);opacity:.72}
+/* 标题：加大加粗（参考图的标题都是重字重），并按尺寸档分别给字号 */
+:root[data-theme="qing"] .card-title{font-weight:700;letter-spacing:-.3px;line-height:1.42}
+:root[data-theme="qing"] .board .card-title{font-size:18.4px;margin-bottom:7px}
+:root[data-theme="qing"] .board.d-xs .card-title{font-size:16px;margin-bottom:5px}
+:root[data-theme="qing"] .board.d-s .card-title{font-size:17.2px}
+:root[data-theme="qing"] .board.d-l .card-title{font-size:20.6px;margin-bottom:9px}
+:root[data-theme="qing"] .board.d-xl .card-title{font-size:23px}
+:root[data-theme="qing"] .board.d-full .card-title{font-size:25px;margin-bottom:12px}
+/* 摘要：偏灰但保证可读（玻璃底比纯白浅，灰要略微加深一点） */
+:root[data-theme="qing"] .card-sum{color:#75757d;line-height:1.82}
+
+/* 卡片内部：删掉虚线分隔线，标签直接排 */
+:root[data-theme="qing"] .card-foot{border-top:0;padding-top:0;margin-top:16px}
+:root[data-theme="qing"] .board.d-xs .card-foot{margin-top:11px}
+:root[data-theme="qing"] .card-open{color:var(--ink-2)}
+/* 标签：细描边胶囊（参考图里的 Writer / Golden User 同款：透明底 + 1px 细边） */
+:root[data-theme="qing"] .tag{
+  background:rgba(255,255,255,.28);border:1px solid rgba(28,28,30,.10);
+  color:var(--ink-2);padding:2.5px 10px;
+}
+/* 右上角「⋯」：玻璃小圆钮（细描边、弱阴影，和卡片同一套语言） */
+:root[data-theme="qing"] .card-more{
+  width:32px;height:32px;border-radius:50%;opacity:.5;
+  background:rgba(255,255,255,.52);border:1px solid rgba(255,255,255,.62);color:var(--ink-3);
+  box-shadow:none;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+}
+:root[data-theme="qing"] .card-more:hover{background:rgba(255,255,255,.72);color:var(--ink);border-color:rgba(255,255,255,.85)}
+
+/* —— 悬浮布局（这一版最大的结构改动）——
+   参考图 1/3/4 里的界面不是"贴边摊开"，而是几个圆角面板浮在灰底上。
+   所以桌面/横屏平板把 .app 四周留出空隙、侧栏和主区各变成一张浮起来的圆角面板；
+   手机和竖屏平板（侧栏本来就是抽屉）不套外框，让卡片直接浮在灰底上。 */
+@media (min-width:1081px), (min-width:901px) and (orientation:landscape){
+  :root[data-theme="qing"] .app{padding:16px;gap:16px}
+  :root[data-theme="qing"] .sidebar{border-radius:28px;border-right:1px solid var(--glass-line);overflow:hidden}
+  :root[data-theme="qing"] .main{
+    background:linear-gradient(180deg,rgba(255,255,255,.26) 0%,rgba(255,255,255,.12) 100%);
+    border:1px solid rgba(255,255,255,.5);
+    border-radius:30px;
+    box-shadow:var(--glass-soft);
+    -webkit-backdrop-filter:blur(26px) saturate(1.4);
+    backdrop-filter:blur(26px) saturate(1.4);
+    overflow:hidden;                     /* 让内部滚动贴着圆角裁切 */
+  }
+}
+
+/* 侧栏：一块浮起来的玻璃板（不再是"贴左边的一条"）。
+   白度 .50–.64 + blur 20px —— 能看出背后的柔光，但文字区保持稳。 */
+:root[data-theme="qing"] .sidebar{
+  background:linear-gradient(180deg,rgba(255,255,255,.64) 0%,rgba(255,255,255,.50) 100%);
+  border-right:1px solid var(--glass-line);
+  box-shadow:var(--glass-soft);
+  -webkit-backdrop-filter:blur(20px) saturate(1.35);
+  backdrop-filter:blur(20px) saturate(1.35);
+}
+/* 品牌方块：黑色圆标（参考图的头像/主按钮都是圆的） */
+:root[data-theme="qing"] .brand-mark{
+  background:#1c1c1e;color:#fff;border-radius:50%;
+  box-shadow:0 6px 16px rgba(28,28,30,.20), inset 0 1px 0 rgba(255,255,255,.15);
+}
+/* 分类选中 = 白色凸起胶囊（Soft UI 的招牌动作，参考图的底部导航同款） */
+:root[data-theme="qing"] .cat-item{border-radius:16px}
+:root[data-theme="qing"] .cat-item:hover{background:rgba(255,255,255,.6);color:var(--ink)}
+:root[data-theme="qing"] .cat-item.on{
+  background:rgba(255,255,255,.85);color:var(--ink);font-weight:650;
+  border:1px solid rgba(255,255,255,.75);
+  box-shadow:0 1px 3px rgba(31,45,66,.05), 0 10px 24px rgba(31,45,66,.07);
+}
+:root[data-theme="qing"] .cat-item.on::before{display:none}    /* 删掉选中态竖条 */
+:root[data-theme="qing"] .cat-item.on .cat-count{background:rgba(28,28,30,.06);color:var(--ink-2)}
+:root[data-theme="qing"] .side-add{border:0;border-radius:14px}
+:root[data-theme="qing"] .side-add:hover{background:rgba(255,255,255,.85);color:var(--ink);box-shadow:0 4px 14px rgba(64,64,88,.07)}
+:root[data-theme="qing"] .side-foot-btn{border-radius:12px}
+
+/* 顶栏：标题加大加粗 + 控件全部圆形/胶囊（参考图里的按钮不是圆就是胶囊）。
+   内边距用 clamp：手机 14px、桌面 30px，一次写好各档都合适。 */
+:root[data-theme="qing"] .topbar{
+  padding:calc(14px + var(--sat,0px)) clamp(14px,2.2vw,30px) 10px;
+  gap:16px;
+}
+:root[data-theme="qing"] .topbar-title h1{
+  font-size:clamp(19px,1.2vw + 14px,25px);font-weight:700;letter-spacing:-.4px;
+}
+:root[data-theme="qing"] .topbar-title p{font-size:13px;color:var(--ink-3)}
+:root[data-theme="qing"] .search-wrap input{
+  height:46px;
+  background:rgba(255,255,255,.55);
+  border:1px solid rgba(255,255,255,.68);
+  box-shadow:var(--glass-soft);
+  -webkit-backdrop-filter:blur(14px) saturate(1.35);
+  backdrop-filter:blur(14px) saturate(1.35);
+}
+:root[data-theme="qing"] .search-wrap input:focus{
+  background:rgba(255,255,255,.72);
+  border-color:rgba(59,124,246,.42);
+  box-shadow:0 0 0 4px rgba(59,124,246,.12);
+}
+:root[data-theme="qing"] .icon-btn{
+  background:rgba(255,255,255,.55);
+  border:1px solid rgba(255,255,255,.68);
+  border-radius:50%;
+  box-shadow:var(--glass-soft);
+  -webkit-backdrop-filter:blur(14px) saturate(1.35);
+  backdrop-filter:blur(14px) saturate(1.35);
+}
+:root[data-theme="qing"] .icon-btn:hover{
+  background:rgba(255,255,255,.72);color:var(--ink);
+  box-shadow:0 4px 10px rgba(31,45,66,.05), 0 18px 46px rgba(31,45,66,.09);
+}
+:root[data-theme="qing"] .icon-btn.sm{
+  background:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.66);border-radius:50%;
+  box-shadow:none;
+}
+:root[data-theme="qing"] .icon-btn.sm:hover{background:#fff;color:var(--ink)}
+/* 弹窗头部的关闭按钮：不要白按钮叠白面板，改成浅灰圆底 */
+:root[data-theme="qing"] .modal-head .icon-btn{
+  background:rgba(28,28,30,.05);border:0;box-shadow:none;border-radius:50%;
+}
+:root[data-theme="qing"] .modal-head .icon-btn:hover{background:rgba(28,28,30,.09);transform:none}
+/* 分段控件 = 玻璃槽 + 白色凸起选中块（参考图的 All / Active 同款） */
+:root[data-theme="qing"] .seg{
+  background:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.62);border-radius:999px;
+  box-shadow:none;
+  -webkit-backdrop-filter:blur(12px) saturate(1.35);
+  backdrop-filter:blur(12px) saturate(1.35);
+}
+:root[data-theme="qing"] .seg button{border-radius:999px}
+:root[data-theme="qing"] .seg button.on{
+  background:rgba(255,255,255,.9);color:var(--ink);
+  box-shadow:0 1px 3px rgba(31,45,66,.08), 0 6px 16px rgba(31,45,66,.07);
+}
+:root[data-theme="qing"] .primary-btn{box-shadow:0 6px 16px rgba(28,28,30,.18)}
+:root[data-theme="qing"] .primary-btn:hover{filter:none;box-shadow:0 10px 24px rgba(28,28,30,.26)}
+:root[data-theme="qing"] .new-card-btn{box-shadow:0 8px 20px rgba(28,28,30,.20)}
+:root[data-theme="qing"] .new-card-btn:hover{filter:none;box-shadow:0 12px 28px rgba(28,28,30,.28)}
+:root[data-theme="qing"] .ghost-btn{
+  background:rgba(255,255,255,.56);
+  border:1px solid rgba(255,255,255,.66);
+  box-shadow:var(--glass-soft);
+  -webkit-backdrop-filter:blur(12px) saturate(1.35);
+  backdrop-filter:blur(12px) saturate(1.35);
+}
+:root[data-theme="qing"] .ghost-btn:hover{background:rgba(255,255,255,.72)}
+/* 工具条：和顶栏同一档留白 */
+:root[data-theme="qing"] .board-tools{padding:2px clamp(14px,2.2vw,30px) 14px;gap:12px}
+:root[data-theme="qing"] .mini-btn{
+  background:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.66);border-radius:999px;
+  box-shadow:var(--glass-soft);
+  -webkit-backdrop-filter:blur(12px) saturate(1.35);
+  backdrop-filter:blur(12px) saturate(1.35);
+}
+:root[data-theme="qing"] .mini-btn.on{
+  background:#1c1c1e;color:#fff;border-color:rgba(28,28,30,0);
+  box-shadow:0 8px 20px rgba(28,28,30,.22);
+}
+:root[data-theme="qing"] .sort-wrap select{
+  background-color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.66);border-radius:999px;
+  box-shadow:var(--glass-soft);
+  -webkit-backdrop-filter:blur(12px) saturate(1.35);
+  backdrop-filter:blur(12px) saturate(1.35);
+}
+:root[data-theme="qing"] .density-wrap{
+  background:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.62);border-radius:999px;
+  box-shadow:none;
+  -webkit-backdrop-filter:blur(12px) saturate(1.35);
+  backdrop-filter:blur(12px) saturate(1.35);
+}
+:root[data-theme="qing"] .dens-btn{border-radius:999px}
+/* 卡片墙的左右留白和顶栏对齐 */
+:root[data-theme="qing"] .board{padding:0 clamp(14px,2.2vw,30px) 12px}
+
+/* 清单视图：一行一条白色小面板（和网格卡片同一套"白面板 + 软阴影"）。
+   注意必须显式写 padding：上面那条通用的 `.board .card{padding:…}` 优先级更高，
+   会盖掉基类清单行"右侧给「⋯」留 44px"的 padding，时间就被按钮压住了（实测踩过）。 */
+:root[data-theme="qing"] .board.list .card{
+  padding:14px 58px 14px 18px;min-height:60px;
+  background:linear-gradient(180deg,var(--glass-hi) 0%,var(--glass-lo) 100%);
+  border:1px solid var(--glass-line);
+  border-radius:18px;
+  margin-bottom:9px;
+  box-shadow:var(--glass-soft);
+  -webkit-backdrop-filter:blur(16px) saturate(1.6);
+  backdrop-filter:blur(16px) saturate(1.6);
+}
+/* 清单行不再放分类色竖条 —— 参考图里列表都是"干净的一行文字"，
+   彩色小竖条属于"装饰性信息"，按"信息做减法"删掉（分类在网格卡和阅读页里看得到）。 */
+:root[data-theme="qing"] .board.list .card::before{display:none}
+:root[data-theme="qing"] .board.list .card:hover{
+  background:linear-gradient(180deg,rgba(255,255,255,.72) 0%,rgba(255,255,255,.5) 100%);
+  box-shadow:0 4px 10px rgba(31,45,66,.05), 0 18px 46px rgba(31,45,66,.09);
+}
+:root[data-theme="qing"] .board.list .card.selected{
+  background:linear-gradient(180deg,rgba(255,255,255,.72) 0%,rgba(255,255,255,.5) 100%);
+  border-color:rgba(28,28,30,.28);
+}
+/* 清单里的分类：和网格一样是灰色小字（圆点已去掉） */
+:root[data-theme="qing"] .board.list .card-cat{padding-left:0}
+
+/* 阅读页 / 弹窗：也是玻璃（白度比卡片高，长文要读得清）+ 细描边 + 弱阴影。
+   圆角走 --r-xl 令牌，不写死 —— 写死会把全屏模式的 border-radius:0 压掉。 */
+:root[data-theme="qing"] .reader-panel,
+:root[data-theme="qing"] .modal-panel,
+:root[data-theme="qing"] .picker-panel{
+  background:linear-gradient(180deg,rgba(255,255,255,.90) 0%,rgba(255,255,255,.82) 100%);
+  border:1px solid rgba(255,255,255,.84);
+  box-shadow:0 4px 12px rgba(31,45,66,.05), 0 30px 70px rgba(31,45,66,.15);
+  -webkit-backdrop-filter:blur(30px) saturate(1.25);
+  backdrop-filter:blur(30px) saturate(1.25);
+}
+:root[data-theme="qing"] .reader-bar{
+  background:rgba(255,255,255,.68);
+  border-bottom:1px solid rgba(28,28,30,.05);
+  -webkit-backdrop-filter:blur(16px) saturate(1.25);
+  backdrop-filter:blur(16px) saturate(1.25);
+}
+/* 阅读正文的留白放大（clamp：手机 20px，桌面 56px），一屏字少一点、呼吸多一点 */
+:root[data-theme="qing"] .reader-inner{
+  max-width:730px;
+  padding:clamp(20px,3.6vw,50px) clamp(18px,4vw,56px) clamp(64px,7vw,100px);
+}
+:root[data-theme="qing"] .reader-head h2{font-size:clamp(23px,1.5vw + 17px,31px);font-weight:700;letter-spacing:-.4px}
+:root[data-theme="qing"] .size-btn{background:rgba(255,255,255,.88);border-radius:999px;box-shadow:0 1px 4px rgba(64,64,88,.06)}
+/* 遮罩：和琉璃同理 —— 基类是"深色压暗"，浅色主题必须换成亮色 + 模糊，
+   否则阅读页会闷成一片灰（琉璃被用户点过名的坑）。这里再淡一点、模糊也降一档。 */
+:root[data-theme="qing"] .reader-backdrop,
+:root[data-theme="qing"] .modal-backdrop,
+:root[data-theme="qing"] .picker-backdrop,
+:root[data-theme="qing"] .side-backdrop{
+  background:rgba(236,236,242,.5);
+  -webkit-backdrop-filter:blur(18px) saturate(1.15);
+  backdrop-filter:blur(18px) saturate(1.15);
+}
+
+/* 正文排版：删装饰线，靠留白与字重分级（小节之间的留白再加大一档） */
+:root[data-theme="qing"] .reader-head{padding-bottom:0;border-bottom:0;margin-bottom:24px}
+:root[data-theme="qing"] .reader-foot{border-top:0;margin-top:36px;padding-top:0}
+:root[data-theme="qing"] .cat-chip{background:rgba(28,28,30,.06);color:var(--ink-2)}
+:root[data-theme="qing"] .md h2{border-bottom:0;padding-bottom:0;margin:2.5em 0 1em}
+:root[data-theme="qing"] .md h3{margin:1.8em 0 .7em}
+:root[data-theme="qing"] .md blockquote{
+  background:rgba(28,28,30,.035);border-left:3px solid rgba(59,124,246,.45);
+  border-radius:16px;padding:.95em 1.2em;
+}
+:root[data-theme="qing"] .md code{border:0;background:#f1f1f4}
+:root[data-theme="qing"] .md pre{background:#f4f4f7;border:0;border-radius:18px;box-shadow:inset 0 1px 3px rgba(64,64,88,.05)}
+:root[data-theme="qing"] .md table{border:0;border-radius:14px}
+:root[data-theme="qing"] .md a{color:#2f66d0;border-bottom-color:rgba(59,124,246,.35)}
+:root[data-theme="qing"] .md a:hover{border-bottom-color:#2f66d0}
+:root[data-theme="qing"] .md li::marker{color:var(--accent-2)}
+:root[data-theme="qing"] .md input[type=checkbox]{accent-color:#3b7cf6}
+:root[data-theme="qing"] .md img{border:0;border-radius:18px;box-shadow:0 6px 16px rgba(64,64,88,.08), 0 20px 44px rgba(64,64,88,.10)}
+
+/* 编辑器 / 表单：玻璃输入框（半透明白 + 1px 发丝边），和整页同一套语言 */
+:root[data-theme="qing"] .title-input{
+  border-bottom:0;background:rgba(255,255,255,.5);border:1px solid rgba(28,28,30,.07);
+  border-radius:18px;padding:0 16px;
+}
+:root[data-theme="qing"] .title-input:focus{
+  background:rgba(255,255,255,.78);border-color:rgba(59,124,246,.42);
+  box-shadow:0 0 0 4px rgba(59,124,246,.12);
+}
+:root[data-theme="qing"] .field input{border:1px solid rgba(28,28,30,.07);background:rgba(255,255,255,.5)}
+:root[data-theme="qing"] .field input:focus{
+  background:rgba(255,255,255,.78);border-color:rgba(59,124,246,.42);
+  box-shadow:0 0 0 4px rgba(59,124,246,.12);
+}
+:root[data-theme="qing"] .editor{border:1px solid rgba(255,255,255,.55);border-radius:20px;box-shadow:none;background:rgba(255,255,255,.34)}
+:root[data-theme="qing"] .editor-toolbar{background:rgba(255,255,255,.55);border-bottom:1px solid rgba(28,28,30,.05)}
+:root[data-theme="qing"] .editor-toolbar button{border-radius:999px}
+:root[data-theme="qing"] .editor-toolbar button.on{background:#1c1c1e;color:#fff}
+:root[data-theme="qing"] .editor-split textarea{background:transparent}
+:root[data-theme="qing"] .editor-preview{background:rgba(255,255,255,.4)}
+:root[data-theme="qing"] .picker-new input{border:1px solid rgba(28,28,30,.07);background:rgba(255,255,255,.5)}
+:root[data-theme="qing"] .picker-item{border-radius:14px}
+
+/* 小菜单 / 拖拽提示 */
+:root[data-theme="qing"] .popmenu{
+  background:rgba(255,255,255,.86);border:1px solid rgba(255,255,255,.78);border-radius:18px;
+  box-shadow:0 4px 12px rgba(31,45,66,.06), 0 22px 50px rgba(31,45,66,.12);
+  -webkit-backdrop-filter:blur(24px) saturate(1.4);
+  backdrop-filter:blur(24px) saturate(1.4);
+}
+:root[data-theme="qing"] .popmenu button{border-radius:12px}
+:root[data-theme="qing"] .dropzone-box{border-radius:30px;background:rgba(255,255,255,.96)}
+
+/* —— 手机 / 竖屏平板：抽屉改成"浮起来的面板"，并加一颗底部居中的黑色圆钮 ——
+   参考图 1/3/4 的招牌动作：主操作不是挤在顶栏，而是底部中间一颗浮起来的黑圆钮
+   （拇指最容易够到的位置）。只在手机档显示；抽屉打开、或出现多选操作条时自动让位。
+   其他三套主题不显示（.fab-new 默认 display:none）。 */
+.fab-new{display:none}
+@media (max-width:760px), (orientation:portrait) and (min-width:761px) and (max-width:1080px){
+  :root[data-theme="qing"] .sidebar{
+    left:10px;top:10px;bottom:10px;
+    width:min(330px,86vw);
+    border-radius:26px;border-right:0;
+    transform:translateX(calc(-100% - 20px));
+  }
+  :root[data-theme="qing"] .sidebar.open{transform:none}
+}
+@media (max-width:760px){
+  :root[data-theme="qing"] .fab-new{
+    display:grid;position:fixed;left:50%;bottom:calc(20px + var(--sab,0px));
+    transform:translateX(-50%);z-index:70;
+    width:58px;height:58px;border-radius:50%;place-items:center;
+    background:#1c1c1e;color:#fff;
+    box-shadow:0 8px 18px rgba(28,28,30,.26), 0 22px 44px rgba(28,28,30,.20);
+    transition:transform .2s var(--ease), box-shadow .2s var(--ease);
+  }
+  :root[data-theme="qing"] .fab-new svg{width:24px;height:24px;stroke-width:2.1}
+  :root[data-theme="qing"] .fab-new:active{transform:translateX(-50%) scale(.93)}
+  :root[data-theme="qing"] body.side-open .fab-new,
+  :root[data-theme="qing"]:has(#selbar:not([hidden])) .fab-new{display:none}
+  /* 顶栏那颗「＋」在手机上交给底部圆钮（一个主操作，不摆两份） */
+  :root[data-theme="qing"] .topbar-actions #btnNew{display:none}
+  /* 手机上恢复「⋯」的触控尺寸（主题里的 32px 是桌面尺寸） */
+  :root[data-theme="qing"] .card-more{width:40px;height:40px;right:8px;top:8px}
+  :root[data-theme="qing"] .board.list .card{padding:13px 62px 13px 16px;min-height:58px}
+  /* 手机上卡片墙底部多留一点，别让圆钮压住最后一张卡 */
+  :root[data-theme="qing"] .board-pad{height:calc(76px + var(--sab,0px))}
+}
+
+/* 老内核兜底：不支持 backdrop-filter 时把半透明收成实色（通透换可读）。
+   注意 body::before 用的是 filter 不是 backdrop-filter，老内核照样能模糊，不用关。 */
+@supports not ((backdrop-filter:blur(2px)) or (-webkit-backdrop-filter:blur(2px))){
+  :root[data-theme="qing"] .board .card,
+  :root[data-theme="qing"] .board.list .card{background:rgba(255,255,255,.96)}
+  :root[data-theme="qing"] .sidebar{background:rgba(255,255,255,.96)}
+  :root[data-theme="qing"] .main{background:rgba(255,255,255,.85)}
+  :root[data-theme="qing"] .reader-panel,
+  :root[data-theme="qing"] .modal-panel,
+  :root[data-theme="qing"] .picker-panel{background:rgba(255,255,255,.98)}
+  :root[data-theme="qing"] .icon-btn,
+  :root[data-theme="qing"] .mini-btn,
+  :root[data-theme="qing"] .search-wrap input,
+  :root[data-theme="qing"] .reader-bar{background:rgba(255,255,255,.96)}
+  :root[data-theme="qing"] .reader-backdrop,
+  :root[data-theme="qing"] .modal-backdrop,
+  :root[data-theme="qing"] .picker-backdrop,
+  :root[data-theme="qing"] .side-backdrop{background:rgba(236,236,242,.88)}
 }
 
 /* 极简主题的卡片没有阴影，得给"指得到"的反馈：
@@ -542,7 +975,7 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .tdot[data-theme="xuan"]{--dot-bg:#f7f2e7;--dot-fg:#b0392c}
 .tdot[data-theme="li"]{--dot-bg:#eef3fb;--dot-fg:#2f6fed}
 .tdot[data-theme="jian"]{--dot-bg:#fbfbfa;--dot-fg:#111111}
-.tdot[data-theme="mo"]{--dot-bg:#1d1d1d;--dot-fg:#e6e3dc}
+.tdot[data-theme="qing"]{--dot-bg:linear-gradient(160deg,#ffffff,#dde4f0);--dot-fg:#1c1c1e}
 
 /* 手机端抽屉侧栏的遮罩：桌面档不显示（侧栏本来就在页面上） */
 .side-backdrop{display:none}
@@ -953,20 +1386,6 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
   color:var(--ink-3);font-size:13.5px;line-height:1.8
 }
 
-/* 墨夜主题下的代码高亮：hljs-github 是浅色配色，直接套会黑字压黑底 */
-:root[data-theme="mo"] .hljs{color:#d5dee4}
-:root[data-theme="mo"] .hljs-comment,:root[data-theme="mo"] .hljs-quote{color:#7d8a94;font-style:italic}
-:root[data-theme="mo"] .hljs-keyword,:root[data-theme="mo"] .hljs-selector-tag,:root[data-theme="mo"] .hljs-meta .hljs-keyword,
-:root[data-theme="mo"] .hljs-template-tag,:root[data-theme="mo"] .hljs-type{color:#ff8fa3}
-:root[data-theme="mo"] .hljs-string,:root[data-theme="mo"] .hljs-doctag,:root[data-theme="mo"] .hljs-regexp,
-:root[data-theme="mo"] .hljs-meta .hljs-string{color:#9cc8ff}
-:root[data-theme="mo"] .hljs-number,:root[data-theme="mo"] .hljs-literal{color:#ffc78f}
-:root[data-theme="mo"] .hljs-title,:root[data-theme="mo"] .hljs-section{color:#c9a7ff}
-:root[data-theme="mo"] .hljs-built_in,:root[data-theme="mo"] .hljs-attr,:root[data-theme="mo"] .hljs-attribute,
-:root[data-theme="mo"] .hljs-variable,:root[data-theme="mo"] .hljs-template-variable{color:#9cc8ff}
-:root[data-theme="mo"] .hljs-name,:root[data-theme="mo"] .hljs-selector-class,:root[data-theme="mo"] .hljs-selector-id{color:#8fe3b0}
-:root[data-theme="mo"] .hljs-symbol,:root[data-theme="mo"] .hljs-bullet,:root[data-theme="mo"] .hljs-link{color:#ffab70}
-
 /* ---------------- 图片查看 ---------------- */
 .lightbox{position:fixed;inset:0;z-index:120;background:rgba(10,18,24,.88);display:grid;place-items:center;
   padding:40px;cursor:zoom-out;animation:fade .2s var(--ease) both}
@@ -1080,8 +1499,8 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .picker-foot .ghost-btn{height:38px;padding:0 18px;font-size:14px}
 
 /* ---------------- 多选操作条 ----------------
-   用「墨底 + 纸色字」的反色胶囊：浅色主题下是深色胶囊，墨夜下自动变成浅色胶囊
-   （因为 --ink 和 --bg 在深色主题里是反过来的），所以不用为深色单独写一套。 */
+   用「墨底 + 纸色字」的反色胶囊：浅色主题下就是深色胶囊（--ink 是深色、--bg 是浅色），
+   四套主题都不用单独写 —— 反色组件统一用 var(--ink)/var(--bg)。 */
 .selbar{
   position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:175;
   display:flex;align-items:center;gap:5px;padding:8px 10px 8px 18px;
@@ -1222,7 +1641,6 @@ mark.hit{background:color-mix(in srgb,var(--amber) 30%,transparent);color:inheri
   .dropzone{background:var(--bg)}
   .md tbody tr:hover{background:var(--surface-2)}
   mark.hit{background:rgba(244,168,59,.3)}
-  :root[data-theme="mo"] .selbar{background:#e8eef1}
   /* 按钮/选中态的彩色阴影在老内核直接没有，没关系，渐变本身还在 */
   .new-card-btn,.primary-btn,.seg button.on,.sel-badge,.mini-btn.on{box-shadow:none}
 }
