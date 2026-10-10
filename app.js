@@ -9,7 +9,7 @@
   var R = window.NoteRender;
 
   // 界面版本号：手机上用它确认是不是拿到了最新代码
-  var APP_VERSION = '2026-10-10-4';
+  var APP_VERSION = '2026-10-10-5';
 
   /* 分类颜色跟着主题走：
      宣纸用传统矿物色并整体压暗（赭石/花青/藤黄/胭脂/松绿/黛…），和纸感统一；
@@ -46,7 +46,7 @@
   /* 每套主题对应的浏览器界面色（手机/平板顶上那条状态栏、地址栏的颜色）。
      这里以前是 index.html 里写死的 <meta name="theme-color" content="#12b8a6">，
      换主题它不跟着变 —— 手机上永远是顶上一道旧青绿。现在跟着主题走。 */
-  var THEME_META = { xuan: '#f6f1e6', su: '#e9e9e7', jian: '#f4f4f2', mo: '#141414' };
+  var THEME_META = { xuan: '#f7f2e7', su: '#ebebe9', jian: '#f2f2f0', mo: '#141414' };
   var THEMES = { xuan: 1, su: 1, jian: 1, mo: 1 };
   function applyTheme(t) {
     if (!THEMES[t]) t = 'xuan';
