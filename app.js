@@ -9,7 +9,7 @@
   var R = window.NoteRender;
 
   // 界面版本号：手机上用它确认是不是拿到了最新代码
-  var APP_VERSION = '2026-10-10-1';
+  var APP_VERSION = '2026-10-10-2';
 
   var PALETTE = ['#4b8dff', '#f4a83b', '#8b7cf6', '#12b8a6', '#f2708c', '#2fb3e8', '#5cc98a', '#ee8455'];
 
@@ -28,6 +28,16 @@
     { key: 'rs-1', label: '宽', fs: 17.4 },
     { key: 'rs-2', label: '全屏', fs: 18.6 }
   ];
+
+  /* ---------------- 主题（五种配色，侧栏底部切换，记住选择） ---------------- */
+  function applyTheme(t) {
+    document.documentElement.dataset.theme = t;
+    try { localStorage.setItem('cn.theme', t); } catch (e) { /* 隐私模式写不进就算了 */ }
+    $$('#themeDots .tdot').forEach(function (b) { b.classList.toggle('on', b.dataset.theme === t); });
+  }
+  function currentTheme() {
+    try { return localStorage.getItem('cn.theme') || 'qing'; } catch (e) { return 'qing'; }
+  }
 
   function readInt(key, def, min, max) {
     var v = parseInt(localStorage.getItem(key), 10);
@@ -1204,6 +1214,16 @@
       api('/api/reveal', { method: 'POST', body: {} }).catch(function (e) { toast(e.message, 'err'); });
     });
 
+    // 主题切换（外观色点）
+    var dots = $('#themeDots');
+    if (dots) {
+      dots.addEventListener('click', function (e) {
+        var b = e.target.closest('.tdot');
+        if (b) applyTheme(b.dataset.theme);
+      });
+      applyTheme(currentTheme());
+    }
+
     // 云同步
     $('#btnSync').addEventListener('click', function () { doSync(false); });
     $('#btnSettings').addEventListener('click', openSettings);
@@ -1747,6 +1767,7 @@
       $$('#viewSeg button').forEach(function (b) { b.classList.toggle('on', b.dataset.view === state.view); });
       renderBoard();
     },
+    setTheme: applyTheme,
     appVersion: APP_VERSION
   };
 })();

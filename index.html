@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
 <title>卡片笔记</title>
+<script>
+/* 在样式加载之前就把主题定下来，避免打开时先闪一下默认配色 */
+(function(){try{document.documentElement.dataset.theme=localStorage.getItem('cn.theme')||'qing';}catch(e){document.documentElement.dataset.theme='qing';}})();
+</script>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#12b8a6">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -70,6 +74,16 @@
       <nav class="cat-list" id="catList"></nav>
       <button class="side-add" id="btnNewCat"><svg><use href="#i-plus"/></svg><span>新建类别</span></button>
       <div class="side-foot">
+        <div class="theme-picker" id="themePicker">
+          <span class="theme-label">外观</span>
+          <div class="theme-dots" id="themeDots">
+            <button class="tdot" data-theme="qing" title="晴山（青）" aria-label="晴山"></button>
+            <button class="tdot" data-theme="dai" title="远黛（靛蓝）" aria-label="远黛"></button>
+            <button class="tdot" data-theme="zhu" title="竹青（绿）" aria-label="竹青"></button>
+            <button class="tdot" data-theme="shu" title="秋柿（橙）" aria-label="秋柿"></button>
+            <button class="tdot" data-theme="mo" title="墨夜（深色）" aria-label="墨夜"></button>
+          </div>
+        </div>
         <button class="side-foot-btn" id="btnSync"><svg><use href="#i-cloud"/></svg><span id="syncLabel">同步</span></button>
         <button class="side-foot-btn" id="btnSettings"><svg><use href="#i-gear"/></svg><span>云同步设置</span></button>
         <button class="side-foot-btn" id="btnReveal"><svg><use href="#i-folder"/></svg><span>打开笔记文件夹</span></button>
