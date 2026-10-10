@@ -9,18 +9,19 @@
   var R = window.NoteRender;
 
   // 界面版本号：手机上用它确认是不是拿到了最新代码
-  var APP_VERSION = '2026-10-10-8';
+  var APP_VERSION = '2026-10-10-9';
 
   /* 分类颜色跟着主题走：
      宣纸用传统矿物色（赭石/花青/藤黄/胭脂/松绿/黛…），和纸感统一；
      琉璃用参考图那套"珊瑚橙 / 天蓝 / 薄荷绿 / 淡紫"的柔和彩色，压在玻璃上很亮；
-     极简用灰阶，不出现任何彩色；墨夜用压在深底上也看得清的浅灰褐。
+     清透用低饱和的粉彩（蓝/珊瑚/薄荷/淡紫…），只做点缀、不抢内容；
+     极简用灰阶，不出现任何彩色。
      —— 上一版是六七个鲜亮的糖果色，在纸感底子上很跳，用户明确说"和背景冲突"。 */
   var PALETTES = {
     xuan: ['#8c5a3c', '#4f6b74', '#96702a', '#8f4453', '#556b4d', '#5a5f78', '#8a5a5a', '#6b6a3f'],
     li:   ['#e0836a', '#5b8def', '#3fae8a', '#9a7de0', '#c99a3f', '#4aa8c9', '#c96a8e', '#6f8aa6'],
     jian: ['#2f2f2f', '#5a5a56', '#7d7d78', '#3f3f3c', '#6a6a65', '#4a4a46', '#8a8a85', '#222220'],
-    mo: ['#c8bda8', '#a9b6bd', '#c9b489', '#c2a0a6', '#a8bdad', '#b3b3bd', '#c6ab9c', '#bdb6a0']
+    qing: ['#5d7fd0', '#d9816a', '#44a58c', '#9382cf', '#c79a44', '#4f9db5', '#c76d92', '#6b83a3']
   };
   function palette() {
     var t = document.documentElement.dataset.theme || 'xuan';
@@ -43,12 +44,12 @@
     { key: 'rs-2', label: '全屏', fs: 18.6 }
   ];
 
-  /* ---------------- 主题（四套配色，侧栏底部切换，记住选择） ---------------- */
+  /* ---------------- 主题（四套，侧栏底部切换，记住选择） ---------------- */
   /* 每套主题对应的浏览器界面色（手机/平板顶上那条状态栏、地址栏的颜色）。
      这里以前是 index.html 里写死的 <meta name="theme-color" content="#12b8a6">，
      换主题它不跟着变 —— 手机上永远是顶上一道旧青绿。现在跟着主题走。 */
-  var THEME_META = { xuan: '#f7f2e7', li: '#f1f4fa', jian: '#f2f2f0', mo: '#141414' };
-  var THEMES = { xuan: 1, li: 1, jian: 1, mo: 1 };
+  var THEME_META = { xuan: '#f7f2e7', li: '#f1f4fa', jian: '#f2f2f0', qing: '#ececee' };
+  var THEMES = { xuan: 1, li: 1, jian: 1, qing: 1 };
   function applyTheme(t) {
     if (!THEMES[t]) {
       // 认不出的主题名一律回落到宣纸，但**要出声**：静默回落踩过坑 ——
@@ -1247,6 +1248,9 @@
   /* ---------------- 事件绑定 ---------------- */
   function bind() {
     $('#btnNew').addEventListener('click', function () { openEditor(null, state.current === '__all__' ? '' : state.current); });
+    // 清透主题手机上那颗底部圆钮（其他主题里是隐藏的）——行为和顶栏「新建卡片」完全相同
+    var fab = $('#fabNew');
+    if (fab) fab.addEventListener('click', function () { openEditor(null, state.current === '__all__' ? '' : state.current); });
     $('#btnNewSide').addEventListener('click', function () { openEditor(null, state.current === '__all__' ? '' : state.current); });
     $('#btnNewCat').addEventListener('click', newCategory);
     $('#btnRefresh').addEventListener('click', function () {
