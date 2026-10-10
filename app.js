@@ -9,9 +9,22 @@
   var R = window.NoteRender;
 
   // 界面版本号：手机上用它确认是不是拿到了最新代码
-  var APP_VERSION = '2026-10-10-2';
+  var APP_VERSION = '2026-10-10-3';
 
-  var PALETTE = ['#4b8dff', '#f4a83b', '#8b7cf6', '#12b8a6', '#f2708c', '#2fb3e8', '#5cc98a', '#ee8455'];
+  /* 分类颜色跟着主题走：
+     宣纸用传统矿物色并整体压暗（赭石/花青/藤黄/胭脂/松绿/黛…），和纸感统一；
+     极简用灰阶，不出现任何彩色；
+     墨夜用压在深底上也看得清的浅灰褐。
+     —— 上一版是六七个鲜亮的糖果色，在纸感底子上很跳，用户明确说"和背景冲突"。 */
+  var PALETTES = {
+    xuan: ['#8c5a3c', '#4f6b74', '#96702a', '#8f4453', '#556b4d', '#5a5f78', '#8a5a5a', '#6b6a3f'],
+    jian: ['#2f2f2f', '#5a5a56', '#7d7d78', '#3f3f3c', '#6a6a65', '#4a4a46', '#8a8a85', '#222220'],
+    mo: ['#c8bda8', '#a9b6bd', '#c9b489', '#c2a0a6', '#a8bdad', '#b3b3bd', '#c6ab9c', '#bdb6a0']
+  };
+  function palette() {
+    var t = document.documentElement.dataset.theme || 'xuan';
+    return PALETTES[t] || PALETTES.xuan;
+  }
 
   /* 卡片墙密度：每档对应 style.css 里的 .board.d-xxx（字号 / 行数 / 留白会一起变） */
   var DENSITY = [
@@ -29,14 +42,21 @@
     { key: 'rs-2', label: '全屏', fs: 18.6 }
   ];
 
-  /* ---------------- 主题（五种配色，侧栏底部切换，记住选择） ---------------- */
+  /* ---------------- 主题（三套配色，侧栏底部切换，记住选择） ---------------- */
+  var THEMES = { xuan: 1, jian: 1, mo: 1 };
   function applyTheme(t) {
+    if (!THEMES[t]) t = 'xuan';
     document.documentElement.dataset.theme = t;
     try { localStorage.setItem('cn.theme', t); } catch (e) { /* 隐私模式写不进就算了 */ }
     $$('#themeDots .tdot').forEach(function (b) { b.classList.toggle('on', b.dataset.theme === t); });
+    // 分类颜色是跟着主题走的一套色，换主题要重新映射并重画
+    if (state.categories.length) refreshColors();
   }
   function currentTheme() {
-    try { return localStorage.getItem('cn.theme') || 'qing'; } catch (e) { return 'qing'; }
+    try {
+      var t = localStorage.getItem('cn.theme') || 'xuan';
+      return THEMES[t] ? t : 'xuan';
+    } catch (e) { return 'xuan'; }
   }
 
   function readInt(key, def, min, max) {
@@ -68,13 +88,21 @@
   function catColor(name) {
     var h = 0;
     for (var i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
-    return PALETTE[h % PALETTE.length];
+    var p = palette();
+    return p[h % p.length];
   }
 
   /** 按类别在列表里的顺序分配颜色，保证相邻类别颜色差别明显 */
   function buildColorMap() {
     state.colorMap = {};
-    state.categories.forEach(function (c, i) { state.colorMap[c.name] = PALETTE[i % PALETTE.length]; });
+    var p = palette();
+    state.categories.forEach(function (c, i) { state.colorMap[c.name] = p[i % p.length]; });
+  }
+  /** 换主题时分类颜色也要跟着换一套，所以要重新映射并重画 */
+  function refreshColors() {
+    buildColorMap();
+    renderSidebar();
+    renderBoard();
   }
   function colorOf(name) {
     return (state.colorMap && state.colorMap[name]) || catColor(name || '未分类');
