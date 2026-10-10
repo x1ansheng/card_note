@@ -151,9 +151,17 @@ html:root{
    关键认知：**玻璃要有"背后能模糊的东西"才成立**。所以这一套自带一层彩色光斑
    （见下面 body::before），不然玻璃只是一块半透明灰。
    而且这一套**改了元素本身的做法**，不只是换色：
-   卡片=薄玻璃、阅读页与弹窗=厚玻璃、列表=玻璃条、顶栏控件=玻璃块、主按钮=实心蓝胶囊。 */
+   卡片=薄玻璃、阅读页与弹窗=厚玻璃、列表=玻璃条、顶栏控件=玻璃块。
+   按钮和品牌方块**不填实色**，一律"玻璃底 + 蓝字"，强调色只落在字和图标上。 */
 :root[data-theme="li"]{
   --bg:#f1f4fa;
+  /* 玻璃的三个零件。**光洁夹着磨砂的关键就在这三行**：
+     一道斜向的高光渐变（左上亮 → 右下清）负责"光洁"，
+     一道近乎纯白的棱边负责"玻璃边"，
+     一层浅而散的外阴影负责"浮起来"。 */
+  --glass-sheen:linear-gradient(158deg,rgba(255,255,255,.60) 0%,rgba(255,255,255,.22) 40%,rgba(255,255,255,.07) 100%);
+  --glass-edge:rgba(255,255,255,.82);
+  --glass-shadow:0 8px 30px rgba(31,45,66,.10);
   --surface:rgba(255,255,255,.55);      /* 玻璃面：白色 + 透明度 */
   --surface-2:rgba(255,255,255,.32);
   --ink:#16202b;
@@ -202,101 +210,158 @@ html:root{
   filter:blur(44px) saturate(1.05);
 }
 
-/* —— 琉璃的元素级改造（这是"换主题"的重点：不只是颜色变了）—— */
+/* —— 琉璃的元素级改造（这是"换主题"的重点：不只是颜色变了）——
+   两条硬要求（用户 2026-10-10 指出）：
+   1) **不要鲜艳色块** —— 品牌方块、主按钮、分段控件选中态原来是实心蓝，
+      要改成"玻璃 + 蓝字/蓝图标"。强调色只准出现在字和图标上，不准出现在底上。
+   2) **要"光洁透明"，不要"磨砂"** —— 磨砂 = 均匀的奶白 + 重模糊，看着像一块塑料板；
+      光洁 = 一道斜向高光渐变（左上亮、右下清）+ 一道白色棱边 + 较低的模糊度。
+      所以这里统一用 `--glass-sheen` 这个斜向渐变，而不是纯色 rgba。 */
 
-/* 卡片：薄玻璃。三层叠出玻璃感 —— 白色叠加 + 模糊 + 一道白色高光边，
-   底边再加一条内高光（`inset 0 1px 0`），这是玻璃最容易识别的那个特征。 */
+/* 卡片：薄玻璃 */
 :root[data-theme="li"] .card{
-  background:rgba(255,255,255,.26);
-  border:1px solid rgba(255,255,255,.50);
-  box-shadow:0 8px 32px rgba(0,0,0,.09), inset 0 1px 0 rgba(255,255,255,.60);
-  -webkit-backdrop-filter:blur(18px) saturate(1.7);
-  backdrop-filter:blur(18px) saturate(1.7);
+  background:var(--glass-sheen);
+  border:1px solid var(--glass-edge);
+  box-shadow:var(--glass-shadow), inset 0 1px 0 rgba(255,255,255,.90), inset 0 -1px 0 rgba(255,255,255,.30);
+  -webkit-backdrop-filter:blur(12px) saturate(1.9);
+  backdrop-filter:blur(12px) saturate(1.9);
 }
 :root[data-theme="li"] .card:hover{
-  background:rgba(255,255,255,.40);
-  border-color:rgba(255,255,255,.78);
-  box-shadow:0 16px 44px rgba(0,0,0,.13), inset 0 1px 0 rgba(255,255,255,.75);
+  background:linear-gradient(158deg,rgba(255,255,255,.74) 0%,rgba(255,255,255,.34) 40%,rgba(255,255,255,.16) 100%);
+  border-color:#fff;
+  box-shadow:0 16px 46px rgba(31,45,66,.16), inset 0 1px 0 #fff;
 }
-/* 卡片左边那条分类色，在玻璃上换成一道"内部透光"的细边 */
+/* 卡片左边那条分类色，在玻璃上收细一点，别抢高光 */
 :root[data-theme="li"] .card::before{width:3px;opacity:.9}
 
-/* 侧栏、顶栏控件、工具条：玻璃块 */
+/* 侧栏：整块玻璃 */
 :root[data-theme="li"] .sidebar{
-  background:rgba(255,255,255,.42);
-  border-right:1px solid rgba(255,255,255,.55);
-  -webkit-backdrop-filter:blur(24px) saturate(1.7);
-  backdrop-filter:blur(24px) saturate(1.7);
+  background:linear-gradient(158deg,rgba(255,255,255,.62) 0%,rgba(255,255,255,.34) 45%,rgba(255,255,255,.24) 100%);
+  border-right:1px solid var(--glass-edge);
+  -webkit-backdrop-filter:blur(20px) saturate(1.8);
+  backdrop-filter:blur(20px) saturate(1.8);
 }
+
+/* 顶栏控件、工具条按钮、搜索框：同一块"薄玻璃" */
 :root[data-theme="li"] .search-wrap input,
 :root[data-theme="li"] .icon-btn,
 :root[data-theme="li"] .seg,
 :root[data-theme="li"] .mini-btn,
 :root[data-theme="li"] .ghost-btn,
 :root[data-theme="li"] .sort-wrap select{
-  background:rgba(255,255,255,.32);
-  border:1px solid rgba(255,255,255,.55);
-  -webkit-backdrop-filter:blur(14px) saturate(1.6);
-  backdrop-filter:blur(14px) saturate(1.6);
-  box-shadow:none;
+  background:var(--glass-sheen);
+  border:1px solid var(--glass-edge);
+  -webkit-backdrop-filter:blur(12px) saturate(1.8);
+  backdrop-filter:blur(12px) saturate(1.8);
+  box-shadow:0 4px 16px rgba(31,45,66,.07), inset 0 1px 0 rgba(255,255,255,.85);
 }
 :root[data-theme="li"] .search-wrap input:focus{
-  background:rgba(255,255,255,.55);border-color:var(--accent-line);
-  box-shadow:0 0 0 4px var(--accent-soft);
+  background:linear-gradient(158deg,rgba(255,255,255,.88),rgba(255,255,255,.52));
+  border-color:var(--accent-line);
+  box-shadow:0 0 0 4px var(--accent-soft), inset 0 1px 0 rgba(255,255,255,.9);
 }
 
-/* 主按钮：这片玻璃上放一块实心蓝胶囊（参考图里的"开始使用"就是这个做法） */
+/* 品牌方块：原来是实心蓝，改成玻璃 + 蓝字 */
+:root[data-theme="li"] .brand-mark{
+  background:linear-gradient(158deg,rgba(255,255,255,.86),rgba(255,255,255,.44));
+  color:var(--accent);
+  border:1px solid #fff;
+  box-shadow:0 6px 18px rgba(47,111,237,.20), inset 0 1px 0 #fff;
+}
+
+/* 主按钮：**不再是实心蓝**，玻璃底 + 蓝字 + 白棱边。
+   强调色只落在字和图标上 —— 这就是"不要鲜艳色块"的执行方式。 */
 :root[data-theme="li"] .new-card-btn,
 :root[data-theme="li"] .primary-btn{
-  --btn-bg:var(--accent);--btn-ink:#fff;--btn-line:transparent;
-  box-shadow:0 8px 24px rgba(47,111,237,.34);
+  --btn-bg:linear-gradient(158deg,rgba(255,255,255,.84) 0%,rgba(255,255,255,.44) 45%,rgba(255,255,255,.26) 100%);
+  --btn-ink:#1f5fd8;
+  --btn-line:#ffffff;
+  box-shadow:0 8px 22px rgba(47,111,237,.20), inset 0 1px 0 #fff;
+}
+:root[data-theme="li"] .new-card-btn:hover,
+:root[data-theme="li"] .primary-btn:hover{
+  filter:none;
+  box-shadow:0 12px 30px rgba(47,111,237,.28), inset 0 1px 0 #fff;
 }
 
-/* 阅读页 / 编辑弹窗 / 类别弹窗：厚玻璃（要读长文，透太多会累眼） */
+/* 阅读页 / 编辑弹窗 / 类别弹窗：厚一点的玻璃，但**底色依然是亮的** */
 :root[data-theme="li"] .reader-panel,
 :root[data-theme="li"] .modal-panel,
 :root[data-theme="li"] .picker-panel{
-  background:rgba(255,255,255,.62);
-  border:1px solid rgba(255,255,255,.62);
-  -webkit-backdrop-filter:blur(30px) saturate(1.5);
-  backdrop-filter:blur(30px) saturate(1.5);
+  background:linear-gradient(165deg,rgba(255,255,255,.80) 0%,rgba(255,255,255,.66) 55%,rgba(255,255,255,.58) 100%);
+  border:1px solid #fff;
+  box-shadow:0 28px 70px rgba(31,45,66,.22), inset 0 1px 0 #fff;
+  -webkit-backdrop-filter:blur(24px) saturate(1.7);
+  backdrop-filter:blur(24px) saturate(1.7);
 }
 :root[data-theme="li"] .reader-bar,
 :root[data-theme="li"] .modal-head,
-:root[data-theme="li"] .modal-foot{background:rgba(255,255,255,.42);border-color:rgba(22,32,43,.10)}
+:root[data-theme="li"] .modal-foot{
+  background:linear-gradient(180deg,rgba(255,255,255,.72),rgba(255,255,255,.46));
+  border-color:rgba(22,32,43,.09);
+}
 
-/* 列表视图：一行一条玻璃条，不再是"贴着纸面的清单" */
+/* ⚠ 遮罩：基类那层是"深色压暗"的，压在玻璃主题上会把阅读页闷成一团灰
+   （用户截图反馈："你现在这个不是纯灰色吗，背景这么暗怎么阅读"）。
+   玻璃主题改用**亮色 + 模糊**的遮罩，背景保持亮堂。 */
+:root[data-theme="li"] .reader-backdrop,
+:root[data-theme="li"] .modal-backdrop,
+:root[data-theme="li"] .picker-backdrop{
+  background:rgba(240,245,252,.42);
+  -webkit-backdrop-filter:blur(22px) saturate(1.5);
+  backdrop-filter:blur(22px) saturate(1.5);
+}
+
+/* 列表视图：一行一条玻璃条 */
 :root[data-theme="li"] .board.list .card{
-  background:rgba(255,255,255,.30);
-  border:1px solid rgba(255,255,255,.45);
+  background:var(--glass-sheen);
+  border:1px solid var(--glass-edge);
   border-radius:16px;
   margin-bottom:8px;
-  -webkit-backdrop-filter:blur(14px) saturate(1.6);
-  backdrop-filter:blur(14px) saturate(1.6);
+  box-shadow:0 4px 16px rgba(31,45,66,.07), inset 0 1px 0 rgba(255,255,255,.85);
+  -webkit-backdrop-filter:blur(12px) saturate(1.8);
+  backdrop-filter:blur(12px) saturate(1.8);
 }
-:root[data-theme="li"] .board.list .card:hover{background:rgba(255,255,255,.44)}
+:root[data-theme="li"] .board.list .card:hover{
+  background:linear-gradient(158deg,rgba(255,255,255,.74),rgba(255,255,255,.36) 40%,rgba(255,255,255,.18));
+}
 :root[data-theme="li"] .board.list{gap:0}
 
-/* 分类色块、标签、提示条：跟着玻璃走 */
-:root[data-theme="li"] .cat-item.on{background:rgba(255,255,255,.5)}
-:root[data-theme="li"] .tag{background:rgba(255,255,255,.45);border-color:rgba(255,255,255,.6)}
-:root[data-theme="li"] .cat-chip{background:rgba(47,111,237,.14)}
-:root[data-theme="li"] .toast{background:rgba(22,32,43,.86);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+/* 分类选中态、标签、chip */
+:root[data-theme="li"] .cat-item.on{
+  background:linear-gradient(158deg,rgba(255,255,255,.78),rgba(255,255,255,.44));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.95);
+}
+:root[data-theme="li"] .tag{background:rgba(255,255,255,.52);border-color:#fff}
+:root[data-theme="li"] .cat-chip{background:rgba(47,111,237,.13);color:var(--accent-ink)}
+:root[data-theme="li"] .toast{
+  background:rgba(28,42,60,.78);
+  -webkit-backdrop-filter:blur(18px) saturate(1.6);
+  backdrop-filter:blur(18px) saturate(1.6);
+}
 
 /* 老内核兜底：不支持 backdrop-filter 时，玻璃会变成"看不清的糊"，
-   所以直接把白色叠厚一点，牺牲通透、保住可读。 */
+   所以把渐变收成纯白、叠厚一点，牺牲通透、保住可读。 */
 @supports not ((backdrop-filter:blur(2px)) or (-webkit-backdrop-filter:blur(2px))){
-  :root[data-theme="li"] .card{background:rgba(255,255,255,.80)}
-  :root[data-theme="li"] .sidebar{background:rgba(255,255,255,.92)}
+  :root[data-theme="li"]{--glass-sheen:#ffffff;--glass-edge:rgba(255,255,255,.9);--glass-shadow:0 6px 20px rgba(31,45,66,.10)}
+  :root[data-theme="li"] .card,
+  :root[data-theme="li"] .board.list .card{background:rgba(255,255,255,.86)}
+  :root[data-theme="li"] .sidebar{background:rgba(255,255,255,.94)}
   :root[data-theme="li"] .reader-panel,
   :root[data-theme="li"] .modal-panel,
-  :root[data-theme="li"] .picker-panel{background:rgba(255,255,255,.95)}
-  :root[data-theme="li"] .board.list .card{background:rgba(255,255,255,.80)}
+  :root[data-theme="li"] .picker-panel{background:rgba(255,255,255,.96)}
   :root[data-theme="li"] .search-wrap input,
   :root[data-theme="li"] .icon-btn,
   :root[data-theme="li"] .seg,
   :root[data-theme="li"] .mini-btn,
-  :root[data-theme="li"] .ghost-btn{background:rgba(255,255,255,.85)}
+  :root[data-theme="li"] .ghost-btn,
+  :root[data-theme="li"] .sort-wrap select{background:rgba(255,255,255,.9)}
+  :root[data-theme="li"] .new-card-btn,
+  :root[data-theme="li"] .primary-btn{--btn-bg:#ffffff}
+  :root[data-theme="li"] .brand-mark{background:#fff}
+  :root[data-theme="li"] .reader-backdrop,
+  :root[data-theme="li"] .modal-backdrop,
+  :root[data-theme="li"] .picker-backdrop{background:rgba(240,245,252,.86)}
   /* 没有模糊就别放光斑，否则底色会花 */
   :root[data-theme="li"] body::before{display:none}
   :root[data-theme="li"]{--bg:#eef2f8}
