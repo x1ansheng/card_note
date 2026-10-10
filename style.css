@@ -194,6 +194,11 @@ html:root{
   --font:var(--font-sans);
   --font-title:var(--font-sans);
   --font-display:var(--font-sans);
+  /* 按钮令牌提到主题根级：.seg button.on / .mini-btn.on / .sel-badge 这些
+     组件级选择器也引用 --btn-*，只覆盖 .new-card-btn 会让它们漏成实心蓝。 */
+  --btn-bg:linear-gradient(158deg,rgba(255,255,255,.84) 0%,rgba(255,255,255,.44) 45%,rgba(255,255,255,.26) 100%);
+  --btn-ink:#1f5fd8;
+  --btn-line:#ffffff;
 }
 
 /* 琉璃的背景光斑层：没有它，玻璃就没有可模糊的东西。
@@ -796,6 +801,8 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .empty-art circle:first-of-type{fill:var(--accent-soft)}
 .empty-art rect:nth-child(n+4){fill:var(--line)}
 .empty-art circle:last-of-type{fill:var(--btn-bg);stroke:var(--btn-line);stroke-width:1}
+/* 琉璃的 --btn-bg 是渐变，SVG 的 fill 吃不了渐变会整个失效 → 给实色玻璃白 */
+:root[data-theme="li"] .empty-art circle:last-of-type{fill:rgba(255,255,255,.9);stroke:var(--glass-edge)}
 .empty-art path{stroke:var(--btn-ink)}
 
 /* ---------------- 阅读浮层（阅读是这个产品的主角） ---------------- */
