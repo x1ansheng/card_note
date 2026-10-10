@@ -7,14 +7,17 @@
 <script>
 /* 在样式加载之前就把主题定下来，避免打开时先闪一下默认配色。
    老版本存的是已经删掉的配色名（qing/dai/zhu/shu/su…），这里做一次迁移，认不出就回宣纸。
+   注意：这里的 'qing' 是**新一轮**的「清透」主题；老早的「晴山」也叫 qing，但早被
+   这条迁移逻辑重置成 xuan 了，所以不会互相打架。
    顺便把"浏览器界面色"（手机/平板顶上那条状态栏）也一起定好 —— 它以前是写死的旧青绿。 */
 (function(){
-  var META={xuan:'#f7f2e7',li:'#f1f4fa',jian:'#f2f2f0',mo:'#141414'};
+  var META={xuan:'#f7f2e7',li:'#f1f4fa',jian:'#f2f2f0',qing:'#ececee'};
   var t='xuan';
   try{
-    var ok={xuan:1,li:1,jian:1,mo:1};
+    var ok={xuan:1,li:1,jian:1,qing:1};
     t=localStorage.getItem('cn.theme');
     if(t==='su') t='li';                 /* 上一版的"柔光"改成了"琉璃" */
+    if(t==='mo') t='qing';               /* 墨夜已删：选过它的迁到新主题「清透」 */
     if(!ok[t]) t='xuan';
     localStorage.setItem('cn.theme',t);
   }catch(e){ t='xuan'; }
@@ -104,7 +107,7 @@
             <button class="tdot" data-theme="xuan" title="宣纸（古典纸质）" aria-label="宣纸"></button>
             <button class="tdot" data-theme="li" title="琉璃（玻璃质感）" aria-label="琉璃"></button>
             <button class="tdot" data-theme="jian" title="极简（黑白灰）" aria-label="极简"></button>
-            <button class="tdot" data-theme="mo" title="墨夜（暗色）" aria-label="墨夜"></button>
+            <button class="tdot" data-theme="qing" title="清透（玻璃 + 柔性拟态）" aria-label="清透"></button>
           </div>
         </div>
         <button class="side-foot-btn" id="btnSync"><svg><use href="#i-cloud"/></svg><span id="syncLabel">同步</span></button>
@@ -308,6 +311,10 @@
     </footer>
   </div>
 </div>
+
+<!-- 清透主题在手机上的浮动主按钮：底部居中的黑色圆钮（参考图的招牌动作）。
+     其他三套主题不显示它（.fab-new 默认 display:none），点击行为和顶栏「新建卡片」一致。 -->
+<button class="fab-new" id="fabNew" title="新建卡片" aria-label="新建卡片"><svg><use href="#i-plus"/></svg></button>
 
 <div class="toast-wrap" id="toastWrap"></div>
 <input type="file" id="filePick" accept="image/*" hidden multiple>
