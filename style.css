@@ -143,47 +143,166 @@ html:root{
   --font-display:var(--font-sans);
 }
 
-/* —— 柔光（严格照《风格参考 02 · Neumorphism / Mellow》）——
-   浅灰同色底 + 同色凸起面 + 大而柔的双向阴影（左上白光、右下灰影）。
-   要点全在阴影的"大与柔"：偏移要够、模糊要够、对比要低，
-   元素一个不少，层级全靠光影。无衬线 + 黑色胶囊按钮。 */
-:root[data-theme="su"]{
-  --bg:#ebebe9;
-  --surface:#f3f3f1;
-  --surface-2:#e3e3e1;
-  --ink:#2a2a28;
-  --ink-2:#777773;
-  --ink-3:#a4a49f;
-  --line:rgba(26,26,24,.06);       /* 新拟态靠阴影分隔，线只留极淡一层 */
-  --line-2:rgba(26,26,24,.10);
-  --accent:#1b1b19;                /* 黑胶囊 */
-  --accent-2:#333330;
-  --accent-ink:#1b1b19;
-  --accent-soft:rgba(26,26,24,.05);
-  --accent-line:rgba(26,26,24,.16);
-  --on-accent:#f8f8f6;
-  --amber:#8a8a85;
-  --rose:#7c7c78;
-  --atm-1:rgba(255,255,255,.62);   /* 光从左上来 */
-  --atm-2:rgba(146,146,142,.09);
-  --sh-1:6px 6px 14px rgba(160,160,156,.55), -5px -5px 12px rgba(255,255,255,.98);
-  --sh-2:9px 9px 22px rgba(152,152,148,.62), -7px -7px 18px #ffffff;
-  --sh-3:0 24px 58px rgba(108,108,104,.32);
-  --r-sm:14px;
-  --r-md:18px;
-  --r-lg:24px;                     /* 新拟态要够圆，圆角小了就没有"捏出来"的感觉 */
-  --r-xl:30px;
-  --code-bg:#e6e6e4;
-  --code-ink:#3a3a37;
-  --r-btn:999px;
-  --r-mark:999px;
+/* —— 琉璃（玻璃拟态 / Glassmorphism）——
+   用户要的"科技风、透明白色、玻璃质感"。参考图里给的是硬指标，照着调：
+     模糊半径 16–24px（移动端 10–14px）· 卡片白色叠加层 10%–25%
+     边框 1–2px 半透明白、alpha 30%–50% · 圆角卡片 24px / 按钮 12–16px
+     投影 0 8px 32px rgba(0,0,0,.10)（blur ≥20px、alpha ≤15%）
+   关键认知：**玻璃要有"背后能模糊的东西"才成立**。所以这一套自带一层彩色光斑
+   （见下面 body::before），不然玻璃只是一块半透明灰。
+   而且这一套**改了元素本身的做法**，不只是换色：
+   卡片=薄玻璃、阅读页与弹窗=厚玻璃、列表=玻璃条、顶栏控件=玻璃块、主按钮=实心蓝胶囊。 */
+:root[data-theme="li"]{
+  --bg:#f1f4fa;
+  --surface:rgba(255,255,255,.55);      /* 玻璃面：白色 + 透明度 */
+  --surface-2:rgba(255,255,255,.32);
+  --ink:#16202b;
+  --ink-2:#4d5f6e;
+  --ink-3:#8b9aa8;
+  --line:rgba(22,32,43,.10);            /* 内部发丝线用深色，压在玻璃上才看得见 */
+  --line-2:rgba(22,32,43,.16);
+  --accent:#2f6fed;                     /* 科技蓝 */
+  --accent-2:#5a8ef5;
+  --accent-ink:#2258c4;
+  --accent-soft:rgba(47,111,237,.10);
+  --accent-line:rgba(47,111,237,.34);
+  --on-accent:#ffffff;
+  --amber:#d98a1f;
+  --rose:#e05a72;
+  --atm-1:rgba(255,255,255,0);
+  --atm-2:rgba(255,255,255,0);          /* 光斑交给 body::before 那一层 */
+  --sh-1:0 8px 32px rgba(0,0,0,.10);    /* 照抄参考图给的投影参数 */
+  --sh-2:0 16px 44px rgba(0,0,0,.14);
+  --sh-3:0 30px 80px rgba(0,0,0,.22);
+  --code-bg:rgba(255,255,255,.45);
+  --code-ink:#2b4257;
+  --r-sm:12px;
+  --r-md:16px;
+  --r-lg:24px;                          /* 卡片 24 / 按钮 12–16，按参考图 */
+  --r-xl:28px;
+  --r-btn:14px;
+  --r-mark:14px;
   --noise:none;
   --font:var(--font-sans);
   --font-title:var(--font-sans);
   --font-display:var(--font-sans);
 }
 
-/* —— 墨夜（柔光的暗色版）—— */
+/* 琉璃的背景光斑层：没有它，玻璃就没有可模糊的东西。
+   参考图的做法是"大面积留白 + 局部彩色"，所以光斑不能铺满 ——
+   压低透明度、加大模糊，让它们只在四个角上透出来一点点。
+   四团柔光对应参考图的配色（珊瑚橙 / 天蓝 / 薄荷绿 / 淡紫）。 */
+:root[data-theme="li"] body::before{
+  content:"";position:fixed;inset:-16%;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(26% 24% at 11% 12%, rgba(255,168,132,.42), transparent 70%),
+    radial-gradient(24% 22% at 89% 8%, rgba(132,176,255,.40), transparent 72%),
+    radial-gradient(28% 26% at 85% 88%, rgba(120,216,184,.34), transparent 70%),
+    radial-gradient(24% 22% at 7% 90%, rgba(190,164,255,.32), transparent 72%);
+  filter:blur(44px) saturate(1.05);
+}
+
+/* —— 琉璃的元素级改造（这是"换主题"的重点：不只是颜色变了）—— */
+
+/* 卡片：薄玻璃。三层叠出玻璃感 —— 白色叠加 + 模糊 + 一道白色高光边，
+   底边再加一条内高光（`inset 0 1px 0`），这是玻璃最容易识别的那个特征。 */
+:root[data-theme="li"] .card{
+  background:rgba(255,255,255,.26);
+  border:1px solid rgba(255,255,255,.50);
+  box-shadow:0 8px 32px rgba(0,0,0,.09), inset 0 1px 0 rgba(255,255,255,.60);
+  -webkit-backdrop-filter:blur(18px) saturate(1.7);
+  backdrop-filter:blur(18px) saturate(1.7);
+}
+:root[data-theme="li"] .card:hover{
+  background:rgba(255,255,255,.40);
+  border-color:rgba(255,255,255,.78);
+  box-shadow:0 16px 44px rgba(0,0,0,.13), inset 0 1px 0 rgba(255,255,255,.75);
+}
+/* 卡片左边那条分类色，在玻璃上换成一道"内部透光"的细边 */
+:root[data-theme="li"] .card::before{width:3px;opacity:.9}
+
+/* 侧栏、顶栏控件、工具条：玻璃块 */
+:root[data-theme="li"] .sidebar{
+  background:rgba(255,255,255,.42);
+  border-right:1px solid rgba(255,255,255,.55);
+  -webkit-backdrop-filter:blur(24px) saturate(1.7);
+  backdrop-filter:blur(24px) saturate(1.7);
+}
+:root[data-theme="li"] .search-wrap input,
+:root[data-theme="li"] .icon-btn,
+:root[data-theme="li"] .seg,
+:root[data-theme="li"] .mini-btn,
+:root[data-theme="li"] .ghost-btn,
+:root[data-theme="li"] .sort-wrap select{
+  background:rgba(255,255,255,.32);
+  border:1px solid rgba(255,255,255,.55);
+  -webkit-backdrop-filter:blur(14px) saturate(1.6);
+  backdrop-filter:blur(14px) saturate(1.6);
+  box-shadow:none;
+}
+:root[data-theme="li"] .search-wrap input:focus{
+  background:rgba(255,255,255,.55);border-color:var(--accent-line);
+  box-shadow:0 0 0 4px var(--accent-soft);
+}
+
+/* 主按钮：这片玻璃上放一块实心蓝胶囊（参考图里的"开始使用"就是这个做法） */
+:root[data-theme="li"] .new-card-btn,
+:root[data-theme="li"] .primary-btn{
+  --btn-bg:var(--accent);--btn-ink:#fff;--btn-line:transparent;
+  box-shadow:0 8px 24px rgba(47,111,237,.34);
+}
+
+/* 阅读页 / 编辑弹窗 / 类别弹窗：厚玻璃（要读长文，透太多会累眼） */
+:root[data-theme="li"] .reader-panel,
+:root[data-theme="li"] .modal-panel,
+:root[data-theme="li"] .picker-panel{
+  background:rgba(255,255,255,.62);
+  border:1px solid rgba(255,255,255,.62);
+  -webkit-backdrop-filter:blur(30px) saturate(1.5);
+  backdrop-filter:blur(30px) saturate(1.5);
+}
+:root[data-theme="li"] .reader-bar,
+:root[data-theme="li"] .modal-head,
+:root[data-theme="li"] .modal-foot{background:rgba(255,255,255,.42);border-color:rgba(22,32,43,.10)}
+
+/* 列表视图：一行一条玻璃条，不再是"贴着纸面的清单" */
+:root[data-theme="li"] .board.list .card{
+  background:rgba(255,255,255,.30);
+  border:1px solid rgba(255,255,255,.45);
+  border-radius:16px;
+  margin-bottom:8px;
+  -webkit-backdrop-filter:blur(14px) saturate(1.6);
+  backdrop-filter:blur(14px) saturate(1.6);
+}
+:root[data-theme="li"] .board.list .card:hover{background:rgba(255,255,255,.44)}
+:root[data-theme="li"] .board.list{gap:0}
+
+/* 分类色块、标签、提示条：跟着玻璃走 */
+:root[data-theme="li"] .cat-item.on{background:rgba(255,255,255,.5)}
+:root[data-theme="li"] .tag{background:rgba(255,255,255,.45);border-color:rgba(255,255,255,.6)}
+:root[data-theme="li"] .cat-chip{background:rgba(47,111,237,.14)}
+:root[data-theme="li"] .toast{background:rgba(22,32,43,.86);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+
+/* 老内核兜底：不支持 backdrop-filter 时，玻璃会变成"看不清的糊"，
+   所以直接把白色叠厚一点，牺牲通透、保住可读。 */
+@supports not ((backdrop-filter:blur(2px)) or (-webkit-backdrop-filter:blur(2px))){
+  :root[data-theme="li"] .card{background:rgba(255,255,255,.80)}
+  :root[data-theme="li"] .sidebar{background:rgba(255,255,255,.92)}
+  :root[data-theme="li"] .reader-panel,
+  :root[data-theme="li"] .modal-panel,
+  :root[data-theme="li"] .picker-panel{background:rgba(255,255,255,.95)}
+  :root[data-theme="li"] .board.list .card{background:rgba(255,255,255,.80)}
+  :root[data-theme="li"] .search-wrap input,
+  :root[data-theme="li"] .icon-btn,
+  :root[data-theme="li"] .seg,
+  :root[data-theme="li"] .mini-btn,
+  :root[data-theme="li"] .ghost-btn{background:rgba(255,255,255,.85)}
+  /* 没有模糊就别放光斑，否则底色会花 */
+  :root[data-theme="li"] body::before{display:none}
+  :root[data-theme="li"]{--bg:#eef2f8}
+}
+
+/* —— 墨夜（暗色）—— */
 :root[data-theme="mo"]{
   --bg:#141414;
   --surface:#1d1d1d;
@@ -351,7 +470,7 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .tdot:hover{transform:scale(1.1)}
 .tdot:active{transform:scale(.95)}
 .tdot[data-theme="xuan"]{--dot-bg:#f7f2e7;--dot-fg:#b0392c}
-.tdot[data-theme="su"]{--dot-bg:#e3e3e1;--dot-fg:#1b1b19}
+.tdot[data-theme="li"]{--dot-bg:#eef3fb;--dot-fg:#2f6fed}
 .tdot[data-theme="jian"]{--dot-bg:#fbfbfa;--dot-fg:#111111}
 .tdot[data-theme="mo"]{--dot-bg:#1d1d1d;--dot-fg:#e6e3dc}
 
