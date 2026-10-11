@@ -1247,10 +1247,7 @@
 
   /* ---------------- 事件绑定 ---------------- */
   function bind() {
-    $('#btnNew').addEventListener('click', function () { openEditor(null, state.current === '__all__' ? '' : state.current); });
-    // 清透主题手机上那颗底部圆钮（其他主题里是隐藏的）——行为和顶栏「新建卡片」完全相同
-    var fab = $('#fabNew');
-    if (fab) fab.addEventListener('click', function () { openEditor(null, state.current === '__all__' ? '' : state.current); });
+    // 「新建卡片」只有侧栏那一颗（2026-10-11 按用户要求去掉了顶栏与手机底部的重复入口）
     $('#btnNewSide').addEventListener('click', function () { openEditor(null, state.current === '__all__' ? '' : state.current); });
     $('#btnNewCat').addEventListener('click', newCategory);
     $('#btnRefresh').addEventListener('click', function () {
