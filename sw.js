@@ -7,7 +7,7 @@
      · 其它资源（公式字体、图标、第三方库）：缓存优先，快且省流量
      · /api/ 和 /files/ 永远走网络，不缓存（那是电脑版的数据接口）
    ================================================================== */
-var VERSION = 'cardnote-v12';
+var VERSION = 'cardnote-v13';
 
 var SHELL = [
   './',
@@ -68,9 +68,13 @@ self.addEventListener('fetch', function (e) {
   if (url.pathname.indexOf('/api/') >= 0 || url.pathname.indexOf('/files/') >= 0) return;
 
   if (isShell(url)) {
-    // 网络优先：保证联网时永远是最新代码；断网时回落到缓存
+    // 网络优先：保证联网时永远是最新代码；断网时回落到缓存。
+    // ⚠ `cache:'no-store'` 是必须的（2026-10-11 补）：GitHub Pages 的 HTML/JS/CSS 带
+    //   `Cache-Control: max-age=600`，不绕开浏览器 HTTP 缓存的话，即使"网络优先"
+    //   也会把 10 分钟内的旧文件当成"网络拿到的新内容"返回 —— 表现就是
+    //   "电脑上网页明明更新了，手机重装图标也还是旧的、版本号不变"。
     e.respondWith(
-      fetch(req).then(function (res) {
+      fetch(req, { cache: 'no-store' }).then(function (res) {
         if (res && res.ok) {
           var copy = res.clone();
           caches.open(VERSION).then(function (c) { c.put(req, copy); });
