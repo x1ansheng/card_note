@@ -782,11 +782,9 @@ html:root{
 :root[data-theme="qing"] .popmenu button{border-radius:12px}
 :root[data-theme="qing"] .dropzone-box{border-radius:30px;background:rgba(255,255,255,.96)}
 
-/* —— 手机 / 竖屏平板：抽屉改成"浮起来的面板"，并加一颗底部居中的黑色圆钮 ——
-   参考图 1/3/4 的招牌动作：主操作不是挤在顶栏，而是底部中间一颗浮起来的黑圆钮
-   （拇指最容易够到的位置）。只在手机档显示；抽屉打开、或出现多选操作条时自动让位。
-   其他三套主题不显示（.fab-new 默认 display:none）。 */
-.fab-new{display:none}
+/* —— 手机 / 竖屏平板：抽屉改成"浮起来的面板" ——
+   2026-10-11 用户要求"只保留侧栏那个最大的新建卡片按钮"，
+   所以底部圆钮（.fab-new）已删掉：抽屉里那颗大按钮就是唯一的添加入口。 */
 @media (max-width:760px), (orientation:portrait) and (min-width:761px) and (max-width:1080px){
   :root[data-theme="qing"] .sidebar{
     left:10px;top:10px;bottom:10px;
@@ -797,25 +795,9 @@ html:root{
   :root[data-theme="qing"] .sidebar.open{transform:none}
 }
 @media (max-width:760px){
-  :root[data-theme="qing"] .fab-new{
-    display:grid;position:fixed;left:50%;bottom:calc(20px + var(--sab,0px));
-    transform:translateX(-50%);z-index:70;
-    width:58px;height:58px;border-radius:50%;place-items:center;
-    background:#1c1c1e;color:#fff;
-    box-shadow:0 8px 18px rgba(28,28,30,.26), 0 22px 44px rgba(28,28,30,.20);
-    transition:transform .2s var(--ease), box-shadow .2s var(--ease);
-  }
-  :root[data-theme="qing"] .fab-new svg{width:24px;height:24px;stroke-width:2.1}
-  :root[data-theme="qing"] .fab-new:active{transform:translateX(-50%) scale(.93)}
-  :root[data-theme="qing"] body.side-open .fab-new,
-  :root[data-theme="qing"]:has(#selbar:not([hidden])) .fab-new{display:none}
-  /* 顶栏那颗「＋」在手机上交给底部圆钮（一个主操作，不摆两份） */
-  :root[data-theme="qing"] .topbar-actions #btnNew{display:none}
   /* 手机上恢复「⋯」的触控尺寸（主题里的 32px 是桌面尺寸） */
   :root[data-theme="qing"] .card-more{width:40px;height:40px;right:8px;top:8px}
   :root[data-theme="qing"] .board.list .card{padding:13px 62px 13px 16px;min-height:58px}
-  /* 手机上卡片墙底部多留一点，别让圆钮压住最后一张卡 */
-  :root[data-theme="qing"] .board-pad{height:calc(76px + var(--sab,0px))}
 }
 
 /* 老内核兜底：不支持 backdrop-filter 时把半透明收成实色（通透换可读）。
