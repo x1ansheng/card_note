@@ -1114,6 +1114,43 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 .card-more svg{width:16px;height:16px}
 .card:hover .card-more{opacity:1}
 .card-more:hover{background:var(--accent-soft);color:var(--accent-ink)}
+
+/* ---------------- 拖动排序（类别 / 卡片） ----------------
+   抓手光标给个提示；拖动中要压住各主题的 hover 抬升、阴影、入场动画，
+   所以关键属性都带 !important（主题规则的特异性比这里的基类高）。 */
+.board--sortable .card{cursor:grab}
+.cat-list .cat-item:not(.cat-all){cursor:grab}
+.card-more,.cat-more{cursor:pointer}
+
+body.reordering{user-select:none;-webkit-user-select:none}
+body.reordering .card,
+body.reordering .cat-item{cursor:grabbing}
+body.reordering .board .card,
+body.reordering .board.list .card,
+body.reordering .board.d-xs .card,
+body.reordering .board.d-s .card,
+body.reordering .board.d-l .card,
+body.reordering .board.d-xl .card,
+body.reordering .board.d-full .card{
+  animation:none !important;
+  transition:box-shadow .16s, border-color .16s !important;
+}
+body.reordering .cat-item{transition:none !important}
+body.reordering .card.dragging{
+  transform:scale(1.03) !important;
+  box-shadow:var(--sh-3) !important;
+  border-color:var(--accent) !important;
+  opacity:.96;
+  z-index:6;
+}
+body.reordering .card.dragging::before{opacity:.4}
+body.reordering .cat-item.dragging{
+  background:var(--accent-soft) !important;
+  color:var(--accent-ink) !important;
+  font-weight:600;
+  box-shadow:var(--sh-2) !important;
+  z-index:6;
+}
 .sel-badge{
   position:absolute;right:10px;top:10px;width:30px;height:30px;border-radius:9px;z-index:2;
   display:none;place-items:center;color:var(--btn-ink);
