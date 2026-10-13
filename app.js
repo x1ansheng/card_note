@@ -10,7 +10,7 @@
 
   // 界面版本号：手机上用它确认是不是拿到了最新代码
   // ⚠ 每次大改都要升！2026-10-11：上一轮忘了升，用户在手机上分不清新旧（显示的还是 10-10-9）
-  var APP_VERSION = '2026-10-11-1';
+  var APP_VERSION = '2026-10-13-1';
 
   /* 分类颜色跟着主题走：
      宣纸用传统矿物色（赭石/花青/藤黄/胭脂/松绿/黛…），和纸感统一；
@@ -97,6 +97,229 @@
   };
 
   var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------------- 拖动排序：顺序存在本机 ----------------
+     顺序只是"看起来的偏好"，不写进 .md、也不进云同步 —— 和排序方式、视图、
+     卡片大小一样存在 localStorage 里，每台设备各管各的。 */
+  function readJson(key, def) {
+    try { var v = JSON.parse(localStorage.getItem(key)); return v == null ? def : v; }
+    catch (e) { return def; }
+  }
+  function catOrderNames() {
+    var a = readJson('cn.catOrder', []);
+    return Array.isArray(a) ? a.filter(function (x) { return typeof x === 'string'; }) : [];
+  }
+  function saveCatOrder(names) {
+    try { localStorage.setItem('cn.catOrder', JSON.stringify(names)); } catch (e) { /* 隐私模式写不进就算了 */ }
+  }
+  function cardOrderMap() {
+    var m = readJson('cn.cardOrder', {});
+    return (m && typeof m === 'object' && !Array.isArray(m)) ? m : {};
+  }
+  function cardOrderFor(cat) {
+    var a = cardOrderMap()[cat];
+    return (Array.isArray(a) && a.length) ? a : null;
+  }
+  function saveCardOrder(cat, ids) {
+    var m = cardOrderMap();
+    m[cat] = ids;
+    try { localStorage.setItem('cn.cardOrder', JSON.stringify(m)); } catch (e) { /* 同上 */ }
+  }
+  /** 侧栏显示顺序：拖过的按拖的顺序排；没记录过的（新类别）跟在最后，保持"卡片多的在前" */
+  function displayCategories() {
+    var order = catOrderNames();
+    if (!order.length) return state.categories;
+    var pos = {};
+    order.forEach(function (n, i) { pos[n] = i; });
+    return state.categories.slice().sort(function (a, b) {
+      var ia = pos[a.name], ib = pos[b.name];
+      if (ia === undefined && ib === undefined) return 0;   // 都排过：维持服务器的默认序
+      if (ia === undefined) return 1;
+      if (ib === undefined) return -1;
+      return ia - ib;
+    });
+  }
+  /** 卡片能不能拖动排序：只在某一个类别视图下（「全部卡片」里跨类别拖动没有意义） */
+  function canReorderCards() {
+    return state.current !== '__all__' && !state.hits;
+  }
+
+  /* ---------------- 拖动排序引擎 ----------------
+     鼠标：按住直接拖（移动 5px 以上才算拖动，否则仍当作点击）。
+     触摸：按住不动 0.22 秒后进入拖动（否则当作滚动 / 点击）—— 手机上不这样
+           就没法和"上下滚动列表"区分开。
+     拖动时直接改 DOM 里的顺序；松手后把新顺序交给 onCommit 保存。 */
+  function makeReorder(container, opts) {
+    var itemSel = opts.itemSelector;
+    var ignoreSel = opts.ignore || '.cat-more,.card-more';
+    var scroller = opts.scroller || container;
+    var drag = null;          // { el, started, moved, travel, sx, sy, touch, timer }
+    var rafId = 0, step = 0, swallowT = null;
+
+    function items() {
+      return Array.prototype.slice.call(container.children).filter(function (el) {
+        return el.matches && el.matches(itemSel) && !(opts.pinned && opts.pinned(el));
+      });
+    }
+    function idOf(el) { return opts.getId ? opts.getId(el) : el.dataset.id; }
+
+    function begin(el, x, y, touch, ev) {
+      if (drag) return;
+      var ign = ev.target.closest && ev.target.closest(ignoreSel);
+      if (ign && ign !== el) return;            // 点的是"⋯"之类的按钮，不当作拖动
+      drag = { el: el, started: false, moved: false, travel: 0, sx: x, sy: y, touch: !!touch, timer: null };
+      if (touch) {
+        drag.timer = setTimeout(function () { if (drag && drag.el === el) activate(); }, 220);
+      }
+    }
+
+    function activate() {
+      if (!drag || drag.started) return;
+      if (opts.canDrag && !opts.canDrag(drag.el)) {
+        if (opts.onBlocked) opts.onBlocked(drag.el);
+        clear();
+        return;
+      }
+      drag.started = true;
+      if (drag.timer) { clearTimeout(drag.timer); drag.timer = null; }
+      drag.el.classList.add('dragging');
+      container.classList.add('reorder-active');
+      document.body.classList.add('reordering');
+      scroller.style.scrollBehavior = 'auto';
+      if (!rafId) rafId = requestAnimationFrame(autoScroll);
+    }
+
+    function clear() {
+      if (!drag) return;
+      if (drag.timer) clearTimeout(drag.timer);
+      drag.el.classList.remove('dragging');
+      container.classList.remove('reorder-active');
+      document.body.classList.remove('reordering');
+      scroller.style.scrollBehavior = '';
+      if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+      step = 0;
+      drag = null;
+    }
+
+    function place(x, y) {
+      var els = items();
+      var d = drag.el;
+      // 先把矩形量出来，并顺便判断是不是"多列网格"：
+      // 单列（清单视图 / 单列密度 / 手机）里同一行的左边界都相同；出现不同左边界就是多列。
+      // 注意要把被拖的那张排除在外：它带 scale 变换，矩形会偏，不能拿来判断列数。
+      var rects = [], grid = false, rowTop = null, rowLeft = null;
+      for (var i = 0; i < els.length; i++) {
+        if (els[i] === d) continue;
+        var rr0 = els[i].getBoundingClientRect();
+        rects.push({ el: els[i], r: rr0 });
+        if (rowTop === null) { rowTop = rr0.top; rowLeft = rr0.left; }
+        else if (Math.abs(rr0.top - rowTop) <= 8 && Math.abs(rr0.left - rowLeft) > 8) grid = true;
+      }
+      var best = null, bestD = Infinity, before = true;
+      for (var k = 0; k < rects.length; k++) {
+        var r = rects[k].r;
+        var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+        // 网格里取"最近的一块"（纵向权重更高，免得同一行左右晃就乱跳）；单列里就只看上下
+        var dist = grid ? Math.abs(cy - y) * 1.15 + Math.abs(cx - x) * 0.28 : Math.abs(cy - y);
+        if (dist < bestD) {
+          bestD = dist; best = rects[k].el;
+          if (grid) {
+            var sameRow = y >= r.top && y <= r.bottom;
+            before = sameRow ? (x < cx) : (y < cy);
+          } else {
+            before = y < cy;
+          }
+        }
+      }
+      if (!best) { if (container.lastElementChild !== d) { container.appendChild(d); drag.moved = true; } return; }
+      var kids = els.filter(function (el) { return el !== d; });
+      var bi = kids.indexOf(best);
+      var ref = before ? kids[bi] : (kids[bi + 1] || null);
+      if (ref === d.nextElementSibling) return;     // 已经在这个位置了，不动 DOM（免得白抖一下）
+      if (!ref && !d.nextElementSibling) return;
+      container.insertBefore(d, ref);
+      drag.moved = true;
+    }
+
+    function autoScroll() {
+      rafId = 0;
+      if (!drag || !drag.started) return;
+      if (step) scroller.scrollTop += step;
+      rafId = requestAnimationFrame(autoScroll);
+    }
+    function setScroll(y) {   // 靠近上下边缘时自动滚，方便把卡片拖到看不见的地方
+      var r = scroller.getBoundingClientRect();
+      var m = 72, v = 0;
+      if (y < r.top + m) v = (y - r.top - m) / 3;
+      else if (y > r.bottom - m) v = (r.bottom - m - y) / 3;
+      step = Math.max(-26, Math.min(26, v));
+    }
+
+    function geo(e) {
+      if (e.touches && e.touches.length) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      return { x: e.clientX, y: e.clientY };
+    }
+    function track(a) { drag.travel = Math.max(drag.travel, Math.abs(a.x - drag.sx) + Math.abs(a.y - drag.sy)); }
+
+    function onMouseMove(e) {
+      if (!drag || drag.touch) return;
+      if (!drag.started) {
+        if (Math.abs(e.clientX - drag.sx) < 5 && Math.abs(e.clientY - drag.sy) < 5) return;
+        activate();
+        if (!drag) return;                      // activate 里可能因为不允许拖动而中止
+      }
+      e.preventDefault();
+      track({ x: e.clientX, y: e.clientY });
+      place(e.clientX, e.clientY);
+      setScroll(e.clientY);
+    }
+    function onTouchMove(e) {
+      if (!drag || !drag.touch) return;
+      var a = geo(e);
+      if (!drag.started) {
+        if (Math.abs(a.x - drag.sx) > 8 || Math.abs(a.y - drag.sy) > 8) clear();   // 先划动 = 想滚动，放弃拖动
+        return;
+      }
+      if (e.cancelable) e.preventDefault();      // 拖动中别让页面跟着滚
+      track(a);
+      place(a.x, a.y);
+      setScroll(a.y);
+    }
+    function onEnd() {
+      if (!drag) return;
+      var d = drag;
+      if (!d.started) { clear(); return; }
+      var ids = items().map(idOf);
+      var moved = d.moved, travel = d.travel;
+      clear();
+      if (moved && opts.onCommit) opts.onCommit(ids);
+      if (moved || travel > 12) swallowClick();  // 真拖过就别再触发"打开卡片 / 切换类别"
+    }
+    function swallowClick() {
+      var h = function (ev) { ev.stopPropagation(); ev.preventDefault(); };
+      document.addEventListener('click', h, true);
+      clearTimeout(swallowT);
+      swallowT = setTimeout(function () { document.removeEventListener('click', h, true); }, 400);
+    }
+
+    container.addEventListener('mousedown', function (e) {
+      if (e.button !== 0) return;
+      var el = e.target.closest && e.target.closest(itemSel);
+      if (!el || !container.contains(el)) return;
+      begin(el, e.clientX, e.clientY, false, e);
+    });
+    container.addEventListener('touchstart', function (e) {
+      if (e.touches.length !== 1) return;
+      var el = e.target.closest && e.target.closest(itemSel);
+      if (!el || !container.contains(el)) return;
+      begin(el, e.touches[0].clientX, e.touches[0].clientY, true, e);
+    }, { passive: true });
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('touchmove', onTouchMove, { passive: false });
+    document.addEventListener('mouseup', onEnd);
+    document.addEventListener('touchend', onEnd);
+    document.addEventListener('touchcancel', clear);
+  }
 
   /* ---------------- 小工具 ---------------- */
   function catColor(name) {
@@ -209,6 +432,8 @@
   /* ---------------- 加载 & 渲染 ---------------- */
   function load(silent) {
     if (state.loading) return Promise.resolve();
+    // 正在拖动排序时别重画（会把拖到一半的元素换掉）
+    if (silent && document.body.classList.contains('reordering')) return Promise.resolve();
     state.loading = true;
     return api('/api/state').then(function (d) {
       var cards = d.cards || [];
@@ -254,6 +479,21 @@
 
   function sortCards(list) {
     var s = state.sort;
+    // 手动排序：只认本机记下来的顺序。没记过的（后来新建、或刚从别的类别移过来）
+    // 一律放最上面，免得新卡片沉到长长的列表底部看不见。
+    if (s === 'manual') {
+      var saved = state.current === '__all__' ? null : cardOrderFor(state.current);
+      if (saved) {
+        var pos = {};
+        saved.forEach(function (id, i) { pos[id] = i; });
+        var known = [], fresh = [];
+        list.forEach(function (c) { (pos[c.id] === undefined ? fresh : known).push(c); });
+        known.sort(function (a, b) { return pos[a.id] - pos[b.id]; });
+        fresh.sort(function (a, b) { return (a.updated || '') < (b.updated || '') ? 1 : -1; });
+        return fresh.concat(known);
+      }
+      s = 'updated';
+    }
     return list.slice().sort(function (a, b) {
       if (s === 'pinned') {
         if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
@@ -272,7 +512,7 @@
     var allCount = state.cards.length;
     var mk = function (name, count, color) {
       var b = document.createElement('button');
-      b.className = 'cat-item' + (state.current === name ? ' on' : '');
+      b.className = 'cat-item' + (state.current === name ? ' on' : '') + (name === '__all__' ? ' cat-all' : '');
       b.dataset.cat = name;
       b.innerHTML =
         (color ? '<span class="cat-dot" style="background:' + color + '"></span>'
@@ -303,7 +543,9 @@
     };
 
     frag.appendChild(mk('__all__', allCount, null));
-    state.categories.forEach(function (c) { frag.appendChild(mk(c.name, c.count, colorOf(c.name))); });
+    // 显示顺序按用户拖过的顺序排（displayCategories），颜色仍按服务器默认序映射，
+    // 这样拖动只改顺序、不会让所有分类的颜色跟着变一遍。
+    displayCategories().forEach(function (c) { frag.appendChild(mk(c.name, c.count, colorOf(c.name))); });
     list.innerHTML = '';
     list.appendChild(frag);
   }
@@ -414,7 +656,8 @@
 
   function renderBoard() {
     var board = $('#board');
-    board.className = 'board ' + (state.view === 'list' ? 'list' : 'grid');
+    board.className = 'board ' + (state.view === 'list' ? 'list' : 'grid') +
+      (canReorderCards() ? ' board--sortable' : '');
     applyDensity();
 
     var list = currentCards();
@@ -972,10 +1215,36 @@
     }).catch(function (e) { toast('删除失败：' + e.message, 'err'); });
   }
 
+  /** 类别改名后，把本机记的"类别顺序"和"类内卡片顺序"一起改到新名字下（否则会被当成新类别排到最后） */
+  function remapCategoryOrder(oldName, newName) {
+    var names = catOrderNames();
+    if (names.length) saveCatOrder(names.map(function (n) { return n === oldName ? newName : n; }));
+    var m = cardOrderMap();
+    if (m[oldName]) {
+      var pre = oldName + '/';
+      m[newName] = m[oldName].map(function (id) {
+        return id.indexOf(pre) === 0 ? newName + '/' + id.slice(pre.length) : id;
+      });
+      delete m[oldName];
+      try { localStorage.setItem('cn.cardOrder', JSON.stringify(m)); } catch (e) { /* 同上 */ }
+    }
+  }
+  /** 类别被删掉后，本机记的那份顺序也一起清掉 */
+  function forgetCategoryOrder(name) {
+    var names = catOrderNames();
+    if (names.length) saveCatOrder(names.filter(function (n) { return n !== name; }));
+    var m = cardOrderMap();
+    if (m[name]) {
+      delete m[name];
+      try { localStorage.setItem('cn.cardOrder', JSON.stringify(m)); } catch (e) { /* 同上 */ }
+    }
+  }
+
   function renameCategory(name) {
     var v = prompt('重命名类别「' + name + '」为：', name);
     if (!v || v === name) return;
     api('/api/category/rename', { method: 'POST', body: { from: name, to: v } }).then(function (r) {
+      remapCategoryOrder(name, r.name);
       if (state.current === name) state.current = r.name;
       toast('已重命名', 'ok');
       load(true);
@@ -985,6 +1254,7 @@
   function deleteCategory(name) {
     if (!confirm('删除类别「' + name + '」？\n整个文件夹会被移动到 电子笔记/_回收站/，不会真的丢失。')) return;
     api('/api/category/delete', { method: 'POST', body: { name: name } }).then(function () {
+      forgetCategoryOrder(name);
       if (state.current === name) state.current = '__all__';
       toast('类别已移入回收站', 'ok');
       load(true);
@@ -1335,6 +1605,41 @@
       state.sort = this.value;
       localStorage.setItem('cn.sort', state.sort);
       renderBoard();
+    });
+
+    // 侧栏类别：拖动排序（「全部卡片」固定在第一位，不参与拖动）
+    makeReorder($('#catList'), {
+      itemSelector: '.cat-item',
+      scroller: $('.side-scroll'),
+      pinned: function (el) { return el.dataset.cat === '__all__'; },
+      canDrag: function (el) { return el.dataset.cat !== '__all__'; },
+      getId: function (el) { return el.dataset.cat; },
+      onCommit: function (names) {
+        saveCatOrder(names);
+        toast('类别顺序已保存（只在这台设备生效）', 'ok');
+      }
+    });
+
+    // 卡片：拖动排序（只在一个类别里做；「全部卡片」是跨类别的混合列表，不支持）
+    makeReorder($('#board'), {
+      itemSelector: '.card',
+      canDrag: function () { return canReorderCards(); },
+      onBlocked: function () { toast('想拖动排序，请先点进某一个类别（「全部卡片」里不支持）', 'err'); },
+      getId: function (el) { return el.dataset.id; },
+      onCommit: function (ids) {
+        var cat = state.current;
+        if (cat === '__all__') return;
+        saveCardOrder(cat, ids);
+        if (state.sort !== 'manual') {
+          state.sort = 'manual';
+          localStorage.setItem('cn.sort', state.sort);
+          var sel = $('#sortSel');
+          if (sel) sel.value = 'manual';
+          toast('已切到「手动排序」，顺序已保存', 'ok');
+        } else {
+          toast('顺序已保存', 'ok');
+        }
+      }
     });
 
     $$('#viewSeg button').forEach(function (b) {
