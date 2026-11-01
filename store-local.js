@@ -65,15 +65,37 @@
     if (s.length > 60) s = s.slice(0, 60).trim();
     return s;
   }
+  /* 类别名允许 父/子 两级，和 server.js 的 sanitizeCat 保持一致 */
   function sanitizeCat(name) {
-    var s = String(name || '').replace(/[\\/:*?"<>|\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').trim();
-    s = s.replace(/^[._]+/, '').replace(/\.+$/, '').trim();
-    if (!s) throw new Error('类别名不能为空');
-    if (s.length > 40) s = s.slice(0, 40).trim();
-    return s;
+    var parts = String(name || '').split('/').map(function (seg) {
+      var s = String(seg).replace(/[\\:*?"<>|\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').trim();
+      s = s.replace(/^[._]+/, '').replace(/\.+$/, '').trim();
+      return s.slice(0, 40).trim();
+    }).filter(function (s) { return s && s !== '.' && s !== '..'; });
+    if (!parts.length) throw new Error('类别名不能为空');
+    return parts.slice(0, 2).join('/');
   }
 
-  /* ---------------- .md 解析 / 生成（与 server.js 同规则） ---------------- */
+  /* 把一个类别（连同它的子类）整体改到新路径，卡片的 cat 和 id 一起换 */
+  function reassignCat(from, to) {
+    return loadAll().then(function (cards) {
+      var pre = from + '/';
+      var hit = cards.filter(function (c) { return c.cat === from || c.cat.indexOf(pre) === 0; });
+      var chain = Promise.resolve();
+      hit.forEach(function (c) {
+        chain = chain.then(function () {
+          var nc = c.cat === from ? to : to + '/' + c.cat.slice(pre.length);
+          var title = c.title;
+          if (nc === to) {
+            title = uniqueTitle(cards.filter(function (x) { return x.cat === nc && x.id !== c.id; }), nc, c.title);
+          }
+          var next = Object.assign({}, c, { cat: nc, title: title, id: idOf(nc, title) });
+          return put1('cards', next).then(function () { return del1('cards', c.id); });
+        });
+      });
+      return chain;
+    });
+  }
   function parseFrontMatter(block) {
     var out = {}, cur = null;
     var lines = block.split('\n');
@@ -229,8 +251,14 @@
       return loadAll().then(function (cards) {
         var byCat = {};
         cards.forEach(function (c) { byCat[c.cat] = (byCat[c.cat] || 0) + 1; });
-        var categories = Object.keys(byCat).map(function (k) { return { name: k, count: byCat[k] }; })
-          .sort(function (a, b) { return b.count - a.count || a.name.localeCompare(b.name, 'zh'); });
+        // 子类有了、父类没有直属卡片时，父类也要出现，否则树里挂不上去
+        Object.keys(byCat).slice().forEach(function (n) {
+          var i = n.lastIndexOf('/');
+          if (i > 0) { var p = n.slice(0, i); if (!(p in byCat)) byCat[p] = 0; }
+        });
+        var categories = Object.keys(byCat).map(function (k) {
+          return { name: k, count: byCat[k], depth: k.indexOf('/') > 0 ? 2 : 1 };
+        }).sort(function (a, b) { return b.count - a.count || a.name.localeCompare(b.name, 'zh'); });
         var list = cards.map(function (c) { return metaOf(c, true); });
         list.sort(function (a, b) { return (a.updated || '') < (b.updated || '') ? 1 : -1; });
         return { cards: list, categories: categories, updatedAt: nowStr(), mode: 'local' };
@@ -318,24 +346,25 @@
 
     'POST /api/category/rename': function (q, b) {
       var from = sanitizeCat(b.from), to = sanitizeCat(b.to);
-      return loadAll().then(function (cards) {
-        var hit = cards.filter(function (c) { return c.cat === from; });
-        var chain = Promise.resolve();
-        hit.forEach(function (c) {
-          chain = chain.then(function () {
-            var title = uniqueTitle(cards.filter(function (x) { return x.cat === to; }), to, c.title);
-            var next = Object.assign({}, c, { cat: to, title: title, id: idOf(to, title) });
-            return put1('cards', next).then(function () { return del1('cards', c.id); });
-          });
-        });
-        return chain.then(function () { return { ok: true, name: to }; });
-      });
+      return reassignCat(from, to).then(function () { return { ok: true, name: to }; });
+    },
+
+    // 把类别挪到另一个类别下面（parent 为空 = 挪回顶层）
+    'POST /api/category/move': function (q, b) {
+      var from = sanitizeCat(b.from);
+      var parent = String(b.parent || '').trim() ? sanitizeCat(b.parent) : '';
+      if (parent === from || parent.indexOf(from + '/') === 0) throw new Error('不能把类别放进它自己里面');
+      var base = from.slice(from.lastIndexOf('/') + 1);
+      var to = parent ? parent + '/' + base : base;
+      if (to === from) return Promise.resolve({ ok: true, name: from });
+      return reassignCat(from, to).then(function () { return { ok: true, name: to }; });
     },
 
     'POST /api/category/delete': function (q, b) {
       var name = sanitizeCat(b.name);
       return loadAll().then(function (cards) {
-        var hit = cards.filter(function (c) { return c.cat === name; });
+        var pre = name + '/';
+        var hit = cards.filter(function (c) { return c.cat === name || c.cat.indexOf(pre) === 0; });
         return Promise.all(hit.map(function (c) { return del1('cards', c.id); }))
           .then(function () { return { ok: true }; });
       });
