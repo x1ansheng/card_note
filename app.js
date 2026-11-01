@@ -10,7 +10,7 @@
 
   // 界面版本号：手机上用它确认是不是拿到了最新代码
   // ⚠ 每次大改都要升！2026-10-11：上一轮忘了升，用户在手机上分不清新旧（显示的还是 10-10-9）
-  var APP_VERSION = '2026-10-13-1';
+  var APP_VERSION = '2026-11-01-1';
 
   /* 分类颜色跟着主题走：
      宣纸用传统矿物色（赭石/花青/藤黄/胭脂/松绿/黛…），和纸感统一；
@@ -157,9 +157,16 @@
     var rafId = 0, step = 0, swallowT = null;
 
     function items() {
-      return Array.prototype.slice.call(container.children).filter(function (el) {
+      var arr = Array.prototype.slice.call(container.children).filter(function (el) {
         return el.matches && el.matches(itemSel) && !(opts.pinned && opts.pinned(el));
       });
+      // 层级固定的列表（类别树）：只跟同一层的兄弟排，跨层拖不动，
+      // 否则子节点会被拖到根层显示出错位，刷新后又弹回去。
+      if (opts.levelOf && drag) {
+        var lv = opts.levelOf(drag.el);
+        arr = arr.filter(function (el) { return opts.levelOf(el) === lv; });
+      }
+      return arr;
     }
     function idOf(el) { return opts.getId ? opts.getId(el) : el.dataset.id; }
 
@@ -505,23 +512,77 @@
     });
   }
 
+  /* ---------------- 类别树 ----------------
+     类别名用 / 表示父子两级（「神经网络/Transformer」），磁盘上就是真嵌套目录。
+     这里把它组织成树，侧栏按层级缩进显示。 */
+  function collapsedCats() {
+    var a = readJson('cn.catCollapsed', []);
+    return Array.isArray(a) ? a.filter(function (x) { return typeof x === 'string'; }) : [];
+  }
+  function setCatCollapsed(name, fold) {
+    var a = collapsedCats().filter(function (n) { return n !== name; });
+    if (fold) a.push(name);
+    try { localStorage.setItem('cn.catCollapsed', JSON.stringify(a)); } catch (e) { /* 同上 */ }
+  }
+
+  function buildCatTree() {
+    var map = {}, roots = [];
+    // 先按用户拖过的顺序走一遍，兄弟节点的先后就跟这个顺序一致
+    displayCategories().forEach(function (c) {
+      map[c.name] = { name: c.name, count: c.count || 0, total: c.count || 0, depth: c.depth || 1, children: [] };
+    });
+    // 父类目录不存在时（只在磁盘上建了子目录）补一个占位父节点，否则子类会凭空消失
+    Object.keys(map).forEach(function (n) {
+      var i = n.lastIndexOf('/');
+      if (i > 0) {
+        var p = n.slice(0, i);
+        if (!map[p]) map[p] = { name: p, count: 0, total: 0, depth: 1, children: [], ghost: true };
+      }
+    });
+    Object.keys(map).forEach(function (n) {
+      var node = map[n];
+      var i = n.lastIndexOf('/');
+      var parent = i > 0 ? map[n.slice(0, i)] : null;
+      if (parent) parent.children.push(node); else roots.push(node);
+    });
+    // 总数含子类：父类上显示 7 + 13 = 20，比只显示 7 更符合"包含"的直觉
+    var sum = function (n) {
+      n.total = n.count;
+      n.children.forEach(function (c) { n.total += sum(c); });
+      return n.total;
+    };
+    roots.forEach(sum);
+    return roots;
+  }
+
   function renderSidebar() {
     var list = $('#catList');
     var frag = document.createDocumentFragment();
+    var collapsed = collapsedCats();
 
-    var allCount = state.cards.length;
-    var mk = function (name, count, color) {
+    var mk = function (node, depth) {
+      var name = node.name;
+      var label = name.slice(name.lastIndexOf('/') + 1);
+      var hasKids = node.children.length > 0;
+      var folded = collapsed.indexOf(name) >= 0;
       var b = document.createElement('button');
-      b.className = 'cat-item' + (state.current === name ? ' on' : '') + (name === '__all__' ? ' cat-all' : '');
+      b.className = 'cat-item' + (state.current === name ? ' on' : '') + (hasKids ? ' has-kids' : '');
       b.dataset.cat = name;
+      b.dataset.depth = depth;
+      b.style.setProperty('--d', depth);
+      b.title = hasKids ? (node.total + ' 张（含 ' + node.children.length + ' 个子类）') : (node.count + ' 张');
       b.innerHTML =
-        (color ? '<span class="cat-dot" style="background:' + color + '"></span>'
-               : '<span class="cat-dot" style="background:var(--accent)"></span>') +
+        (hasKids
+          ? '<span class="cat-caret' + (folded ? ' folded' : '') + '" data-fold="' + name + '" role="button" title="展开 / 折叠">' + svgIcon('i-chev') + '</span>'
+          : '<span class="cat-caret cat-caret-none"></span>') +
+        '<span class="cat-dot" style="background:' + (node.ghost ? 'var(--line-2)' : colorOf(name)) + '"></span>' +
         '<span class="cat-name"></span>' +
-        '<span class="cat-count">' + count + '</span>' +
-        (name === '__all__' ? '' : '<span class="cat-more" data-more="' + name + '" title="重命名 / 删除">' + svgIcon('i-menu') + '</span>');
-      b.querySelector('.cat-name').textContent = name === '__all__' ? '全部卡片' : name;
+        '<span class="cat-count">' + node.total + '</span>' +
+        '<span class="cat-more" data-more="' + name + '" title="重命名 / 移动 / 删除">' + svgIcon('i-menu') + '</span>';
+      b.querySelector('.cat-name').textContent = label;
       b.addEventListener('click', function (ev) {
+        var fold = ev.target.closest('[data-fold]');
+        if (fold) { ev.stopPropagation(); setCatCollapsed(name, collapsed.indexOf(name) < 0); renderSidebar(); return; }
         if (ev.target.closest('[data-more]')) { openCatMenu(ev.target.closest('[data-more]'), name); return; }
         state.current = name;
         state.query = '';
@@ -533,21 +594,111 @@
         renderBoard();
         $('#board').scrollTop = 0;
       });
-      if (name !== '__all__') {
-        b.addEventListener('contextmenu', function (ev) {
-          ev.preventDefault();
-          openCatMenu(b, name);
-        });
-      }
+      b.addEventListener('contextmenu', function (ev) {
+        ev.preventDefault();
+        openCatMenu(b, name);
+      });
       return b;
     };
 
-    frag.appendChild(mk('__all__', allCount, null));
-    // 显示顺序按用户拖过的顺序排（displayCategories），颜色仍按服务器默认序映射，
-    // 这样拖动只改顺序、不会让所有分类的颜色跟着变一遍。
-    displayCategories().forEach(function (c) { frag.appendChild(mk(c.name, c.count, colorOf(c.name))); });
+    var allCount = state.cards.length;
+    var all = document.createElement('button');
+    all.className = 'cat-item cat-all' + (state.current === '__all__' ? ' on' : '');
+    all.dataset.cat = '__all__';
+    all.dataset.depth = '0';
+    all.style.setProperty('--d', 0);
+    all.innerHTML =
+      '<span class="cat-caret cat-caret-none"></span>' +
+      '<span class="cat-dot" style="background:var(--accent)"></span>' +
+      '<span class="cat-name">全部卡片</span>' +
+      '<span class="cat-count">' + allCount + '</span>';
+    all.addEventListener('click', function () {
+      state.current = '__all__';
+      state.query = '';
+      $('#searchInput').value = '';
+      $('#btnClearSearch').hidden = true;
+      clearSearch();
+      clearSelection();
+      renderSidebar();
+      renderBoard();
+      $('#board').scrollTop = 0;
+    });
+    frag.appendChild(all);
+
+    var walk = function (nodes, depth) {
+      nodes.forEach(function (n) {
+        frag.appendChild(mk(n, depth));
+        if (n.children.length && collapsed.indexOf(n.name) < 0) walk(n.children, depth + 1);
+      });
+    };
+    walk(buildCatTree(), 0);
+
     list.innerHTML = '';
     list.appendChild(frag);
+  }
+
+  /* 选父类：只列顶层类别，外加一个「移到顶层」。
+     和移动卡片共用同一个弹窗，只是把底部"新建"输入框藏起来（这里不需要）。 */
+  function pickCategoryParent(catName) {
+    return new Promise(function (resolve) {
+      pickerResolve = resolve;
+      var label = catName.slice(catName.lastIndexOf('/') + 1);
+      $('#pickerTitle').textContent = '把「' + label + '」放到哪里？';
+      $('#pickerSub').textContent = '选一个类别，它就变成那个类别的子类；选「移到顶层」回到最外层。';
+      var list = $('#pickerList');
+      list.innerHTML = '';
+      var frag = document.createDocumentFragment();
+
+      var mkItem = function (name, text, isRoot) {
+        var b = document.createElement('button');
+        b.className = 'picker-item';
+        b.innerHTML = '<span class="cat-dot" style="background:' + (isRoot ? 'var(--line-2)' : colorOf(name)) + '"></span>' +
+          '<span class="cat-name"></span>';
+        b.querySelector('.cat-name').textContent = text;
+        b.addEventListener('click', function () { closePicker(name); });
+        frag.appendChild(b);
+      };
+
+      mkItem('', '移到顶层（不放在任何类别下面）', true);
+      state.categories
+        .filter(function (c) {
+          return c.depth !== 2 && c.name !== catName && c.name.indexOf(catName + '/') !== 0;
+        })
+        .forEach(function (c) { mkItem(c.name, c.name, false); });
+
+      list.appendChild(frag);
+      var newBox = $('.picker-new');
+      if (newBox) newBox.hidden = true;
+      $('#pickerNew').value = '';
+      var el = $('#picker');
+      el.hidden = false;
+      requestAnimationFrame(function () { el.classList.add('open'); });
+    });
+  }
+
+  function moveCatInto(name, parent) {
+    api('/api/category/move', { method: 'POST', body: { from: name, parent: parent || '' } })
+      .then(function (r) {
+        var newName = r.name || name;
+        remapCategoryOrder(name, newName);
+        if (state.current === name || state.current.indexOf(name + '/') === 0) {
+          state.current = newName + state.current.slice(name.length);
+        }
+        toast(parent ? '已移入「' + parent + '」' : '已移到顶层', 'ok');
+        return load(true);
+      })
+      .catch(function (e) { toast('移动失败：' + e.message, 'err'); });
+  }
+
+  function newSubCategory(parent) {
+    if (parent.indexOf('/') > 0) { toast('已经是最深一级，不能再往下建', 'err'); return; }
+    var v = prompt('在「' + parent + '」下面新建子类别：\n例如：未分类、Transformer', '');
+    if (!v) return;
+    api('/api/category', { method: 'POST', body: { name: parent + '/' + v } }).then(function (r) {
+      toast('子类别「' + r.name + '」已创建', 'ok');
+      setCatCollapsed(parent, false);
+      return load(true);
+    }).catch(function (e) { toast('创建失败：' + e.message, 'err'); });
   }
 
   function openCatMenu(anchor, name) {
@@ -555,20 +706,32 @@
     var r = anchor.getBoundingClientRect();
     var menu = document.createElement('div');
     menu.className = 'popmenu';
+    var isChild = name.indexOf('/') > 0;
     menu.innerHTML =
       '<button data-act="rename">' + svgIcon('i-edit') + '<span>重命名类别</span></button>' +
+      (isChild ? '' : '<button data-act="sub">' + svgIcon('i-folder') + '<span>新建子类别…</span></button>') +
       '<button data-act="new">' + svgIcon('i-plus') + '<span>在此类别新建卡片</span></button>' +
+      '<button data-act="into">' + svgIcon('i-move') + '<span>移入其他类别…</span></button>' +
+      (isChild ? '<button data-act="top">' + svgIcon('i-chev') + '<span>移到顶层</span></button>' : '') +
       '<button data-act="delete" class="danger">' + svgIcon('i-trash') + '<span>删除类别</span></button>';
     document.body.appendChild(menu);
     menu.style.left = Math.min(r.left, window.innerWidth - 200) + 'px';
-    menu.style.top = Math.min(r.bottom + 6, window.innerHeight - 160) + 'px';
+    menu.style.top = Math.min(r.bottom + 6, window.innerHeight - 290) + 'px';
     menu.addEventListener('click', function (ev) {
       var btn = ev.target.closest('button');
       if (!btn) return;
       var act = btn.dataset.act;
       closeCatMenu();
       if (act === 'rename') renameCategory(name);
+      if (act === 'sub') newSubCategory(name);
       if (act === 'new') openEditor(null, name);
+      if (act === 'into') {
+        pickCategoryParent(name).then(function (parent) {
+          if (parent === null) return;          // 取消
+          moveCatInto(name, parent);
+        });
+      }
+      if (act === 'top') moveCatInto(name, '');
       if (act === 'delete') deleteCategory(name);
     });
     setTimeout(function () { document.addEventListener('click', closeCatMenu, { once: true }); }, 0);
@@ -714,7 +877,13 @@
         '</div>' +
         '<h3 class="card-title"></h3>' +
         '<p class="card-sum"></p>';
-      main.querySelector('.card-cat').textContent = card.cat || '未分类';
+      // 属性贴只显示最后一段（「神经网络/Transformer」→「Transformer」），
+      // 全路径放在 title 里，免得把卡片顶栏撑开
+      var catFull = card.cat || '未分类';
+      var catShort = catFull.slice(catFull.lastIndexOf('/') + 1);
+      var catEl = main.querySelector('.card-cat');
+      catEl.textContent = catShort;
+      catEl.title = catFull;
       main.querySelector('.card-date').textContent = relTime(card.updated);
       main.querySelector('.card-title').textContent = card.title;
       var sumEl = main.querySelector('.card-sum');
@@ -866,13 +1035,15 @@
       $('#pickerSub').textContent = sub || '';
       var list = $('#pickerList');
       list.innerHTML = '';
+      var newBox = $('.picker-new');
+      if (newBox) newBox.hidden = false;      // 上一个弹窗可能是"选父类"，把它藏起来过
       var frag = document.createDocumentFragment();
       state.categories.forEach(function (c) {
         var b = document.createElement('button');
         b.className = 'picker-item';
         b.innerHTML = '<span class="cat-dot" style="background:' + colorOf(c.name) + '"></span>' +
           '<span class="cat-name"></span><span class="cat-count">' + c.count + ' 张</span>';
-        b.querySelector('.cat-name').textContent = c.name;
+        b.querySelector('.cat-name').textContent = (c.depth === 2 ? '　└ ' : '') + c.name;
         b.addEventListener('click', function () { closePicker(c.name); });
         frag.appendChild(b);
       });
@@ -1216,34 +1387,49 @@
   }
 
   /** 类别改名后，把本机记的"类别顺序"和"类内卡片顺序"一起改到新名字下（否则会被当成新类别排到最后） */
+  /** 类别改名 / 移动后，本机的顺序记录要跟着改；子类路径一起改（B/A → C/A） */
   function remapCategoryOrder(oldName, newName) {
+    var pre = oldName + '/';
+    var swap = function (n) {
+      if (n === oldName) return newName;
+      if (n.indexOf(pre) === 0) return newName + '/' + n.slice(pre.length);
+      return n;
+    };
     var names = catOrderNames();
-    if (names.length) saveCatOrder(names.map(function (n) { return n === oldName ? newName : n; }));
-    var m = cardOrderMap();
-    if (m[oldName]) {
-      var pre = oldName + '/';
-      m[newName] = m[oldName].map(function (id) {
-        return id.indexOf(pre) === 0 ? newName + '/' + id.slice(pre.length) : id;
-      });
-      delete m[oldName];
-      try { localStorage.setItem('cn.cardOrder', JSON.stringify(m)); } catch (e) { /* 同上 */ }
-    }
+    if (names.length) saveCatOrder(names.map(swap));
+
+    var m = cardOrderMap(), changed = false;
+    Object.keys(m).forEach(function (k) {
+      var nk = swap(k);
+      if (nk === k) return;
+      m[nk] = m[k].map(function (id) { return id.indexOf(pre) === 0 ? newName + '/' + id.slice(pre.length) : id; });
+      delete m[k];
+      changed = true;
+    });
+    if (changed) { try { localStorage.setItem('cn.cardOrder', JSON.stringify(m)); } catch (e) { /* 同上 */ } }
+
+    var col = collapsedCats().map(swap);
+    try { localStorage.setItem('cn.catCollapsed', JSON.stringify(col)); } catch (e) { /* 同上 */ }
   }
   /** 类别被删掉后，本机记的那份顺序也一起清掉 */
   function forgetCategoryOrder(name) {
     var names = catOrderNames();
-    if (names.length) saveCatOrder(names.filter(function (n) { return n !== name; }));
-    var m = cardOrderMap();
-    if (m[name]) {
-      delete m[name];
-      try { localStorage.setItem('cn.cardOrder', JSON.stringify(m)); } catch (e) { /* 同上 */ }
-    }
+    if (names.length) saveCatOrder(names.filter(function (n) { return n !== name && n.indexOf(name + '/') !== 0; }));
+    var m = cardOrderMap(), changed = false;
+    Object.keys(m).forEach(function (k) {
+      if (k === name || k.indexOf(name + '/') === 0) { delete m[k]; changed = true; }
+    });
+    if (changed) { try { localStorage.setItem('cn.cardOrder', JSON.stringify(m)); } catch (e) { /* 同上 */ } }
   }
 
   function renameCategory(name) {
-    var v = prompt('重命名类别「' + name + '」为：', name);
-    if (!v || v === name) return;
-    api('/api/category/rename', { method: 'POST', body: { from: name, to: v } }).then(function (r) {
+    var cut = name.lastIndexOf('/');
+    var short = cut > 0 ? name.slice(cut + 1) : name;
+    var parent = cut > 0 ? name.slice(0, cut) : '';
+    var v = prompt('重命名类别「' + short + '」为：', short);
+    if (!v || v === short) return;
+    var to = parent ? parent + '/' + v : v;
+    api('/api/category/rename', { method: 'POST', body: { from: name, to: to } }).then(function (r) {
       remapCategoryOrder(name, r.name);
       if (state.current === name) state.current = r.name;
       toast('已重命名', 'ok');
@@ -1252,21 +1438,29 @@
   }
 
   function deleteCategory(name) {
-    if (!confirm('删除类别「' + name + '」？\n整个文件夹会被移动到 电子笔记/_回收站/，不会真的丢失。')) return;
+    var cut = name.lastIndexOf('/');
+    var short = cut > 0 ? name.slice(cut + 1) : name;
+    var kids = state.categories.filter(function (c) { return c.name.indexOf(name + '/') === 0; });
+    var extra = kids.length ? '\n注意：它下面的 ' + kids.length + ' 个子类会一起被移走。' : '';
+    if (!confirm('删除类别「' + short + '」？\n整个文件夹会被移动到 电子笔记/_回收站/，不会真的丢失。' + extra)) return;
     api('/api/category/delete', { method: 'POST', body: { name: name } }).then(function () {
       forgetCategoryOrder(name);
-      if (state.current === name) state.current = '__all__';
+      if (state.current === name || state.current.indexOf(name + '/') === 0) state.current = '__all__';
       toast('类别已移入回收站', 'ok');
       load(true);
     }).catch(function (e) { toast('删除失败：' + e.message, 'err'); });
   }
 
   function newCategory() {
-    var v = prompt('新建类别（就是笔记文件夹里的一个子文件夹）：\n例如：自动控制原理、信号与系统', '');
+    var hint = '新建类别（就是笔记文件夹里的一个子文件夹）：\n\n' +
+      '· 直接写名字 → 顶层类别\n' +
+      '· 写成「父类别/子类别」→ 放进某个类别里面，例如 神经网络/Transformer\n';
+    var v = prompt(hint, '');
     if (!v) return;
     api('/api/category', { method: 'POST', body: { name: v } }).then(function (r) {
       toast('类别「' + r.name + '」已创建', 'ok');
       state.current = r.name;
+      if (r.name.indexOf('/') > 0) setCatCollapsed(r.name.slice(0, r.name.lastIndexOf('/')), false);
       return load(true);
     }).catch(function (e) { toast('创建失败：' + e.message, 'err'); });
   }
@@ -1608,11 +1802,13 @@
     });
 
     // 侧栏类别：拖动排序（「全部卡片」固定在第一位，不参与拖动）
+    // levelOf 让拖动只在同一层里生效：子类不会被拖到根层去
     makeReorder($('#catList'), {
       itemSelector: '.cat-item',
       scroller: $('.side-scroll'),
       pinned: function (el) { return el.dataset.cat === '__all__'; },
       canDrag: function (el) { return el.dataset.cat !== '__all__'; },
+      levelOf: function (el) { return el.dataset.depth; },
       getId: function (el) { return el.dataset.cat; },
       onCommit: function (names) {
         saveCatOrder(names);
