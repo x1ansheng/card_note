@@ -139,9 +139,31 @@
     return t;
   }
 
+  /* 批注存 front matter 的 annot 字段，base64(JSON)，与 server.js 保持同一格式。
+     浏览器没有 Buffer，中文也不能直接 btoa，所以先转成 UTF-8 字节再编码。 */
+  function packAnnot(list) {
+    var arr = (Array.isArray(list) ? list : []).filter(function (a) { return a && a.id && a.k; });
+    if (!arr.length) return '';
+    var bytes = new TextEncoder().encode(JSON.stringify(arr));
+    var bin = '';
+    for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin);
+  }
+  function unpackAnnot(v) {
+    var s = String(v == null ? '' : v).trim().replace(/^["']|["']$/g, '');
+    if (!s) return [];
+    try {
+      var bin = atob(s);
+      var bytes = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      var arr = JSON.parse(new TextDecoder().decode(bytes));
+      return Array.isArray(arr) ? arr.filter(function (a) { return a && a.id && a.k; }) : [];
+    } catch (e) { return []; }
+  }
+
   function parseNote(raw, fallbackTitle) {
     var text = String(raw).replace(/^\uFEFF/, '').replace(/\r\n/g, '\n');
-    var meta = { title: fallbackTitle, tags: [], created: '', updated: '', pinned: false };
+    var meta = { title: fallbackTitle, tags: [], created: '', updated: '', pinned: false, annot: [] };
     var m = text.match(/^---[ \t]*\n([\s\S]*?)\n---[ \t]*\n?/);
     if (m) {
       var found = parseFrontMatter(m[1]);
@@ -152,6 +174,7 @@
         if (found.created) meta.created = found.created;
         if (found.updated) meta.updated = found.updated;
         if (found.pinned !== undefined) meta.pinned = /^(true|yes|1|是)$/i.test(found.pinned);
+        if (found.annot) meta.annot = unpackAnnot(found.annot);
       }
     }
     if (!meta.title || meta.title === fallbackTitle) {
@@ -170,17 +193,19 @@
   }
 
   function serializeNote(meta, content) {
-    return [
+    var packed = packAnnot(meta.annot);
+    var lines = [
       '---',
       'title: ' + escapeYaml(meta.title),
       'tags: ' + (meta.tags || []).join(', '),
       'created: ' + escapeYaml(meta.created || nowStr()),
       'updated: ' + escapeYaml(meta.updated || nowStr()),
-      'pinned: ' + (meta.pinned ? 'true' : 'false'),
-      '---',
-      '',
-      String(content || '').replace(/\r\n/g, '\n').replace(/\s+$/, '') + '\n'
-    ].join('\n');
+      'pinned: ' + (meta.pinned ? 'true' : 'false')
+    ];
+    if (packed) lines.push('annot: ' + escapeYaml(packed));
+    lines.push('---', '',
+      String(content || '').replace(/\r\n/g, '\n').replace(/\s+$/, '') + '\n');
+    return lines.join('\n');
   }
 
   function summarize(md, n) {
@@ -222,6 +247,7 @@
       created: c.created, updated: c.updated, pinned: !!c.pinned,
       size: (c.content || '').length
     };
+    if (c.annot && c.annot.length) { o.annot = c.annot; o.annotCount = c.annot.length; }
     if (withSum) o.summary = summarize(c.content);
     return o;
   }
@@ -309,6 +335,7 @@
             created: old.created,
             updated: nowStr(),
             pinned: b.pinned == null ? old.pinned : !!b.pinned,
+            annot: b.annot == null ? old.annot : b.annot,
             content: b.content == null ? old.content : String(b.content).trim() + '\n'
           };
           var chain = put1('cards', next);
@@ -319,6 +346,16 @@
             });
           });
         });
+      });
+    },
+
+    // 只改批注，不动 updated
+    'POST /api/card/annot': function (q, b) {
+      if (!b.id) throw new Error('缺少 id');
+      return get1('cards', b.id).then(function (c) {
+        if (!c) throw new Error('卡片不存在');
+        c.annot = Array.isArray(b.annot) ? b.annot : [];
+        return put1('cards', c).then(function () { return { ok: true, count: c.annot.length }; });
       });
     },
 
