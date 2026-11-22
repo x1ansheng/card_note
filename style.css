@@ -2017,3 +2017,82 @@ mark.hit{background:color-mix(in srgb,var(--amber) 30%,transparent);color:inheri
   *{animation-duration:.01ms!important;transition-duration:.06s!important}
   .reader-panel.flying .reader-scroll{opacity:1}
 }
+
+/* ==================================================================
+   批注：高亮 / 手绘
+   高亮色四套主题通用（都是浅色底），所以不放进主题令牌。
+   ================================================================== */
+.an-mark{
+  border-radius:2px;
+  padding:1px 0;
+  cursor:pointer;
+  box-decoration-break:clone;
+  -webkit-box-decoration-break:clone;
+  transition:filter .15s;
+}
+.an-mark:hover{filter:brightness(.93)}
+
+.an-y{background:rgba(255,214,64,.42)}
+.an-g{background:rgba(120,214,140,.38)}
+.an-b{background:rgba(118,184,255,.38)}
+.an-p{background:rgba(255,148,190,.34)}
+
+/* 选中文字后浮出来的小工具条 */
+.an-bar{
+  position:fixed;z-index:170;
+  display:flex;align-items:center;gap:7px;
+  padding:7px 10px;border-radius:12px;
+  background:color-mix(in srgb,var(--surface) 97%,transparent);
+  -webkit-backdrop-filter:blur(14px) saturate(1.5);
+  backdrop-filter:blur(14px) saturate(1.5);
+  border:1px solid var(--line);box-shadow:var(--sh-2);
+  animation:popIn .14s var(--ease-out) both;
+}
+.an-bar .an-dot{
+  width:22px;height:22px;border-radius:50%;
+  border:1px solid rgba(0,0,0,.14);cursor:pointer;flex:none;
+  transition:transform .14s;
+}
+.an-bar .an-dot:hover{transform:scale(1.12)}
+.an-bar .an-mini{
+  width:26px;height:26px;flex:none;display:grid;place-items:center;
+  border-radius:7px;color:var(--ink-2);cursor:pointer;transition:.15s;
+}
+.an-bar .an-mini:hover{background:var(--accent-soft);color:var(--accent-ink)}
+.an-bar .an-mini svg{width:14px;height:14px}
+
+/* 标记操作菜单里的色块 */
+.an-menu .an-dot{width:14px;height:14px;border-radius:50%;flex:none;border:1px solid rgba(0,0,0,.14)}
+
+/* 手绘：挂在段落上，用 viewBox 缩放，线宽靠 non-scaling-stroke 保持 */
+.an-host{position:relative}
+.an-ink{
+  position:absolute;inset:0;width:100%;height:100%;
+  pointer-events:none;overflow:visible;z-index:1;
+}
+.an-ink.col-r{color:#d0453a}
+.an-ink.col-b{color:#2f6fed}
+.an-ink.col-g{color:#2e8b57}
+.an-ink.col-y{color:#d9a11a}
+
+@media print{
+  .an-bar,.an-menu{display:none!important}
+  .an-mark{background:none!important;text-decoration:underline;text-decoration-color:#c00}
+}
+
+/* 画笔：canvas 盖在正文上，坐标和正文同一套 */
+#readerInner{position:relative}
+.ink-canvas{
+  position:absolute;left:0;top:0;z-index:5;
+  cursor:crosshair;touch-action:none;
+}
+body.draw-mode #readerBody{user-select:none;-webkit-user-select:none}
+body.draw-mode .reader-scroll{cursor:crosshair}
+.icon-btn.on{color:var(--accent-ink);background:var(--accent-soft)}
+
+/* 卡片墙上的"有批注"小圆点 */
+.card-an{
+  width:7px;height:7px;border-radius:50%;flex:none;
+  background:#d09a1c;
+  box-shadow:0 0 0 2px color-mix(in srgb, #d09a1c 22%, transparent);
+}
