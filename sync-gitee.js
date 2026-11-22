@@ -48,13 +48,15 @@
     for (var i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0;
     return h.toString(16) + '-' + s.length;
   }
-  /** 卡片"内容指纹"：正文 + 标题 + 标签 + 置顶（只算正文的话，改标题不会上传） */
+  /** 卡片"内容指纹"：正文 + 标题 + 标签 + 置顶 + 批注（只算正文的话，改标题不会上传）。
+      批注非空才拼进去，否则老卡片的哈希全变、一次全量重传。 */
   function cardHash(parsed) {
+    var a = (parsed.meta.annot && parsed.meta.annot.length) ? '\u0001' + JSON.stringify(parsed.meta.annot) : '';
     return hash(parsed.meta.title + '\u0001' + (parsed.meta.tags || []).join(',') +
-      '\u0001' + (parsed.meta.pinned ? '1' : '0') + '\u0002' + parsed.content);
+      '\u0001' + (parsed.meta.pinned ? '1' : '0') + a + '\u0002' + parsed.content);
   }
   function hashCard(card) {
-    return cardHash({ meta: { title: card.title, tags: card.tags || [], pinned: !!card.pinned }, content: card.content });
+    return cardHash({ meta: { title: card.title, tags: card.tags || [], pinned: !!card.pinned, annot: card.annot || [] }, content: card.content });
   }
 
   /* ---------------- Gitee API ---------------- */
