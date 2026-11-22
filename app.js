@@ -10,7 +10,7 @@
 
   // 界面版本号：手机上用它确认是不是拿到了最新代码
   // ⚠ 每次大改都要升！2026-10-11：上一轮忘了升，用户在手机上分不清新旧（显示的还是 10-10-9）
-  var APP_VERSION = '2026-11-01-1';
+  var APP_VERSION = '2026-11-22-1';
 
   /* 分类颜色跟着主题走：
      宣纸用传统矿物色（赭石/花青/藤黄/胭脂/松绿/黛…），和纸感统一；
@@ -873,6 +873,7 @@
         '<div class="card-top">' +
           '<span class="card-cat"></span>' +
           (card.pinned ? '<span class="card-pin" title="已置顶">' + svgIcon('i-star') + '</span>' : '') +
+          (card.annotCount ? '<span class="card-an" title="' + card.annotCount + ' 处批注"></span>' : '') +
           '<span class="card-date"></span>' +
         '</div>' +
         '<h3 class="card-title"></h3>' +
@@ -1178,6 +1179,7 @@
     $('#readerMeta').innerHTML = metaHtml.join('');
 
     R.renderMarkdown(card.content, reader.body, { basePath: card.cat, collapsible: true });
+    applyAnnots(reader.body, card.annot || []);
     resolveLocalImages(reader.body);
     applyReaderSize();
 
@@ -1245,6 +1247,10 @@
     }
     el.classList.remove('open');
     document.body.classList.remove('locked');
+    // 关掉阅读页时把画笔和工具条一起收掉，免得下次打开还挂在那儿
+    if (drawMode) toggleDraw(false);
+    closeAnBar();
+    pendingSel = null;
     try { history.replaceState(null, '', location.pathname); } catch (e) { /* */ }
     setTimeout(function () {
       el.hidden = true;
@@ -1556,6 +1562,438 @@
         if (b && b.data) img.src = b.data;
       }).catch(function () { /* 图片没同步过来就先空着 */ });
     });
+  }
+
+  /* ==================================================================
+     批注：高亮 + 手绘
+     ------------------------------------------------------------------
+     存在卡片的 front matter（annot 字段），不写进正文，不动 updated。
+     高亮用「原文 + 前后各 24 字」定位，笔记改过也能重新对上；对不上就不画，不报错。
+     手绘绑在段落上、存相对段落的百分比坐标，窗口宽度变了也跟着段落走。
+     ================================================================== */
+  var AN_COLORS = ['y', 'g', 'b', 'p'];
+  var anBar = null;        // 选中文字后浮出来的小工具条
+  var pendingSel = null;   // 点工具条时选区已经塌了，所以提前存一份
+  var drawMode = false;    // 画笔模式
+
+  function anId() {
+    return 'a' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  }
+
+  /** 把正文里的文本节点摊平成一个字符串，并记住每个节点占的区间 —— 定位全靠它 */
+  function flatText(root) {
+    var text = '', nodes = [], i = 0;
+    var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode: function (n) {
+        var p = n.parentNode;
+        if (!p || !n.nodeValue) return NodeFilter.FILTER_REJECT;
+        if (p.nodeName === 'SCRIPT' || p.nodeName === 'STYLE' || p.nodeName === 'NOSCRIPT') {
+          return NodeFilter.FILTER_REJECT;
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    var n;
+    while ((n = walker.nextNode())) {
+      nodes.push({ node: n, start: i, end: i + n.nodeValue.length });
+      text += n.nodeValue;
+      i += n.nodeValue.length;
+    }
+    return { text: text, nodes: nodes };
+  }
+
+  function clearAnnots(root) {
+    Array.prototype.forEach.call(root.querySelectorAll('mark.an-mark'), function (m) {
+      var p = m.parentNode;
+      if (!p) return;
+      while (m.firstChild) p.insertBefore(m.firstChild, m);
+      p.removeChild(m);
+      p.normalize();
+    });
+    Array.prototype.forEach.call(root.querySelectorAll('.an-ink'), function (s) { s.remove(); });
+    Array.prototype.forEach.call(root.querySelectorAll('.an-host'), function (el) {
+      el.classList.remove('an-host');
+      el.removeAttribute('data-an-ink');
+    });
+  }
+
+  /** 优先用「前文 + 原文 + 后文」整段匹配，找不到再退化成只找原文 */
+  function findRange(flat, a) {
+    var t = String(a.t || '');
+    if (!t) return null;
+    var text = flat.text;
+    if (a.b || a.a) {
+      var combo = (a.b || '') + t + (a.a || '');
+      var i = text.indexOf(combo);
+      if (i >= 0) {
+        var s0 = i + (a.b || '').length;
+        return [s0, s0 + t.length];
+      }
+    }
+    var j = text.indexOf(t);
+    return j < 0 ? null : [j, j + t.length];
+  }
+
+  /** 把 [s,e) 这段文本包进 mark；跨多个文本节点也能拆开分别包 */
+  function wrapRange(flat, s, e, a) {
+    var hits = flat.nodes.filter(function (n) { return n.end > s && n.start < e; });
+    for (var k = hits.length - 1; k >= 0; k--) {
+      var it = hits[k], node = it.node;
+      var ls = Math.max(0, s - it.start);
+      var le = Math.min(node.nodeValue.length, e - it.start);
+      var target = node;
+      if (ls > 0) target = target.splitText(ls);
+      var len = le - ls;
+      if (len < target.nodeValue.length) target.splitText(len);
+      var mark = document.createElement('mark');
+      mark.className = 'an-mark an-' + (a.c || 'y');
+      mark.dataset.an = a.id;
+      if (a.n) mark.title = a.n;
+      target.parentNode.insertBefore(mark, target);
+      mark.appendChild(target);
+    }
+  }
+
+  /** 手绘：绑在正文的块级元素上，viewBox 用 0–100，线宽不跟着缩放 */
+  function drawInk(root, a) {
+    // 这个选择器和保存时的 INK_SEL 必须完全一致：blk 存的是元素在这个列表里的下标
+    var blocks = root.querySelectorAll(INK_SEL);
+    var host = blocks[a.blk];
+    if (!host || !a.pts || a.pts.length < 2) return;
+    host.classList.add('an-host');
+    var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('class', 'an-ink col-' + (a.c || 'r'));
+    svg.setAttribute('viewBox', '0 0 100 100');
+    svg.setAttribute('preserveAspectRatio', 'none');
+    svg.dataset.an = a.id;
+    var poly = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+    poly.setAttribute('points', a.pts.map(function (p) {
+      return (Math.round(p[0] * 100) / 100) + ',' + (Math.round(p[1] * 100) / 100);
+    }).join(' '));
+    poly.setAttribute('fill', 'none');
+    poly.setAttribute('stroke', 'currentColor');
+    poly.setAttribute('stroke-width', '2.2');
+    poly.setAttribute('stroke-linecap', 'round');
+    poly.setAttribute('stroke-linejoin', 'round');
+    poly.setAttribute('vector-effect', 'non-scaling-stroke');
+    svg.appendChild(poly);
+    host.appendChild(svg);
+  }
+
+  function applyAnnots(root, list) {
+    clearAnnots(root);
+    if (!list || !list.length) return;
+    // 每标一个都重新摊平：包过一次 mark 之后文本偏移就不准了
+    list.filter(function (a) { return a.k === 'hl'; }).forEach(function (a) {
+      var flat = flatText(root);
+      var r = findRange(flat, a);
+      if (r) wrapRange(flat, r[0], r[1], a);
+    });
+    list.filter(function (a) { return a.k === 'ink'; }).forEach(function (a) { drawInk(root, a); });
+  }
+
+  /** 把选区换算成「原文 + 前后文」——这是唯一能跨版本对得上的定位信息 */
+  function captureSelection() {
+    var sel = window.getSelection();
+    if (!sel || sel.isCollapsed || !reader.body) return null;
+    var text = sel.toString();
+    if (!text || !text.trim()) return null;
+    var range = sel.getRangeAt(0);
+    if (!reader.body.contains(range.commonAncestorContainer)) return null;
+    var flat = flatText(reader.body);
+    var s = -1, e = -1;
+    for (var i = 0; i < flat.nodes.length; i++) {
+      if (flat.nodes[i].node === range.startContainer) s = flat.nodes[i].start + range.startOffset;
+      if (flat.nodes[i].node === range.endContainer) e = flat.nodes[i].start + range.endOffset;
+    }
+    if (s < 0 || e < 0 || e <= s) return null;
+    return {
+      text: flat.text.slice(s, e),
+      before: flat.text.slice(Math.max(0, s - 24), s),
+      after: flat.text.slice(e, Math.min(flat.text.length, e + 24))
+    };
+  }
+
+  function closeAnBar() {
+    if (anBar && anBar.parentNode) anBar.parentNode.removeChild(anBar);
+    anBar = null;
+  }
+
+  function showAnBar(cap, rect) {
+    closeAnBar();
+    pendingSel = cap;
+    anBar = document.createElement('div');
+    anBar.className = 'an-bar';
+    anBar.innerHTML =
+      AN_COLORS.map(function (c) {
+        return '<button class="an-dot an-' + c + '" data-color="' + c + '" title="高亮"></button>';
+      }).join('') +
+      '<button class="an-mini" data-act="note" title="高亮并加备注">' + svgIcon('i-edit') + '</button>' +
+      '<button class="an-mini" data-act="cancel" title="取消">' + svgIcon('i-close') + '</button>';
+    document.body.appendChild(anBar);
+    var bw = 208, bh = 40;
+    var left = Math.min(Math.max(8, rect.left + rect.width / 2 - bw / 2), window.innerWidth - bw - 8);
+    var top = rect.top - bh - 10;
+    if (top < 8) top = rect.bottom + 10;
+    anBar.style.left = left + 'px';
+    anBar.style.top = top + 'px';
+  }
+
+  function persistAnnots(card, list, tip) {
+    card.annot = list;
+    if (reader.body) applyAnnots(reader.body, list);
+    return api('/api/card/annot', { method: 'POST', body: { id: card.id, annot: list } })
+      .then(function () {
+        syncCardBadge(card);
+        if (tip) toast(tip, 'ok');
+      })
+      .catch(function (e) { toast('批注没保存上：' + e.message, 'err'); });
+  }
+
+  /** 卡片墙上的"有批注"小圆点，加完标记立刻出现，不用刷新 */
+  function syncCardBadge(card) {
+    var n = (card.annot || []).length;
+    var meta = state.cards.filter(function (c) { return c.id === card.id; })[0];
+    if (meta) meta.annotCount = n;
+    var el = $('.card[data-id="' + cssEsc(card.id) + '"]');
+    if (!el) return;
+    var top = el.querySelector('.card-top');
+    if (!top) return;
+    var b = top.querySelector('.card-an');
+    if (!n) { if (b) b.remove(); return; }
+    if (!b) {
+      b = document.createElement('span');
+      b.className = 'card-an';
+      var date = top.querySelector('.card-date');
+      if (date) top.insertBefore(b, date); else top.appendChild(b);
+    }
+    b.title = n + ' 处批注';
+  }
+
+  function addHighlight(card, color, note) {
+    if (!pendingSel) return;
+    var item = { id: anId(), k: 'hl', t: pendingSel.text, c: color, at: nowStamp() };
+    if (pendingSel.before) item.b = pendingSel.before;
+    if (pendingSel.after) item.a = pendingSel.after;
+    if (note) item.n = note;
+    var list = (card.annot || []).slice();
+    list.push(item);
+    pendingSel = null;
+    closeAnBar();
+    var sel = window.getSelection();
+    if (sel) sel.removeAllRanges();
+    persistAnnots(card, list, '已高亮');
+  }
+
+  function removeAnnot(card, id) {
+    var list = (card.annot || []).filter(function (a) { return a.id !== id; });
+    persistAnnots(card, list, '已取消标记');
+  }
+
+  function nowStamp() {
+    var d = new Date(), p = function (n) { return String(n).padStart(2, '0'); };
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' +
+      p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+
+  /** 点已有的标记：改颜色 / 改备注 / 取消 */
+  function openAnnotMenu(el) {
+    var card = reader.card;
+    if (!card) return;
+    var id = el.dataset.an;
+    var list0 = card.annot || [];
+    var a = list0.filter(function (x) { return x.id === id; })[0];
+    if (!a) return;
+    closeAnBar();
+    var menu = document.createElement('div');
+    menu.className = 'popmenu an-menu';
+    menu.innerHTML =
+      AN_COLORS.map(function (c) {
+        return '<button data-color="' + c + '"><span class="an-dot an-' + c + '"></span><span>' +
+          (c === a.c ? '当前颜色' : '换成这个') + '</span></button>';
+      }).join('') +
+      '<button data-act="note">' + svgIcon('i-edit') + '<span>' + (a.n ? '改备注' : '加备注') + '</span></button>' +
+      '<button data-act="del" class="danger">' + svgIcon('i-trash') + '<span>取消标记</span></button>';
+    document.body.appendChild(menu);
+    var r = el.getBoundingClientRect();
+    menu.style.left = Math.min(Math.max(8, r.left), window.innerWidth - 210) + 'px';
+    menu.style.top = Math.min(r.bottom + 6, window.innerHeight - 250) + 'px';
+    setTimeout(function () {
+      document.addEventListener('click', function h(ev) {
+        if (!menu.contains(ev.target)) { menu.remove(); document.removeEventListener('click', h); }
+      });
+    }, 0);
+    menu.addEventListener('click', function (ev) {
+      var b = ev.target.closest('button');
+      if (!b) return;
+      var list = (card.annot || []).slice();
+      var idx = -1;
+      for (var i = 0; i < list.length; i++) { if (list[i].id === id) { idx = i; break; } }
+      if (idx < 0) { menu.remove(); return; }
+      if (b.dataset.color) {
+        list[idx].c = b.dataset.color;
+        menu.remove();
+        persistAnnots(card, list);
+        return;
+      }
+      if (b.dataset.act === 'del') {
+        list.splice(idx, 1);
+        menu.remove();
+        persistAnnots(card, list, '已取消标记');
+        return;
+      }
+      if (b.dataset.act === 'note') {
+        var v = prompt('备注：', list[idx].n || '');
+        if (v === null) return;
+        list[idx].n = v.trim();
+        menu.remove();
+        persistAnnots(card, list, '备注已保存');
+      }
+    });
+  }
+
+  /* ---------------- 画笔：在正文上圈画 ----------------
+     画的时候是一层透明 canvas 盖在正文上；松手后把笔迹换算成"相对某一段落"的百分比坐标，
+     存进批注、用 SVG 画回去。这样换窗口宽度时，圈会跟着段落走，不会飘到别的段落上。 */
+  var inkCanvas = null, inkCtx = null, inkPts = null, inkDown = false;
+  var INK_SEL = 'p,h1,h2,h3,h4,li,blockquote,pre,td,th,figcaption';
+
+  function destroyInkCanvas() {
+    if (inkCanvas && inkCanvas.parentNode) inkCanvas.parentNode.removeChild(inkCanvas);
+    inkCanvas = null; inkCtx = null; inkPts = null; inkDown = false;
+  }
+
+  function buildInkCanvas() {
+    destroyInkCanvas();
+    var inner = $('#readerInner');
+    if (!inner) return;
+    var w = inner.clientWidth, h = inner.scrollHeight;
+    var dpr = window.devicePixelRatio || 1;
+    var c = document.createElement('canvas');
+    c.className = 'ink-canvas';
+    c.width = Math.round(w * dpr);
+    c.height = Math.round(h * dpr);
+    c.style.width = w + 'px';
+    c.style.height = h + 'px';
+    var ctx = c.getContext('2d');
+    ctx.scale(dpr, dpr);
+    ctx.strokeStyle = '#d0453a';
+    ctx.lineWidth = 2.2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    inner.appendChild(c);
+    inkCanvas = c; inkCtx = ctx;
+    c.addEventListener('pointerdown', inkStart);
+    c.addEventListener('pointermove', inkMove);
+    c.addEventListener('pointerup', inkEnd);
+    c.addEventListener('pointercancel', inkEnd);
+  }
+
+  function inkPos(e) {
+    var r = inkCanvas.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  }
+
+  function inkStart(e) {
+    if (!inkCtx) return;
+    e.preventDefault();
+    try { inkCanvas.setPointerCapture(e.pointerId); } catch (err) { /* 老浏览器 */ }
+    inkDown = true;
+    inkPts = [inkPos(e)];
+    inkCtx.beginPath();
+    inkCtx.moveTo(inkPts[0].x, inkPts[0].y);
+  }
+
+  function inkMove(e) {
+    if (!inkDown || !inkPts) return;
+    e.preventDefault();
+    var p = inkPos(e);
+    var last = inkPts[inkPts.length - 1];
+    if (Math.abs(p.x - last.x) < 1.2 && Math.abs(p.y - last.y) < 1.2) return;   // 太密的点不要
+    inkPts.push(p);
+    inkCtx.lineTo(p.x, p.y);
+    inkCtx.stroke();
+  }
+
+  function inkEnd() {
+    if (!inkDown) return;
+    inkDown = false;
+    var pts = inkPts;
+    inkPts = null;
+    if (!pts || pts.length < 4) { clearInkCanvas(); return; }
+    saveInk(pts);
+  }
+
+  function clearInkCanvas() {
+    if (inkCtx && inkCanvas) inkCtx.clearRect(0, 0, inkCanvas.width, inkCanvas.height);
+  }
+
+  function saveInk(pts) {
+    var card = reader.card, inner = $('#readerInner');
+    if (!card || !inner || !reader.body) return;
+    // 必须以 reader.body 为准：drawInk 也是在 body 里找第 blk 个元素，两边容器不一致就会错位
+    var blocks = reader.body.querySelectorAll(INK_SEL);
+    var ir = inner.getBoundingClientRect();
+    var cx = 0, cy = 0;
+    pts.forEach(function (p) { cx += p.x; cy += p.y; });
+    cx /= pts.length; cy /= pts.length;
+
+    // 落笔中心落在哪个段落里，就绑哪个；嵌套时取面积最小的那个（最具体）
+    var best = -1, bestArea = Infinity;
+    for (var i = 0; i < blocks.length; i++) {
+      var r = blocks[i].getBoundingClientRect();
+      var l = r.left - ir.left, t = r.top - ir.top;
+      if (cx >= l && cx <= l + r.width && cy >= t && cy <= t + r.height) {
+        var area = r.width * r.height;
+        if (area < bestArea) { bestArea = area; best = i; }
+      }
+    }
+    if (best < 0) {
+      toast('没找到落笔的段落，画在文字上再试', 'err');
+      clearInkCanvas();
+      return;
+    }
+    var rr = blocks[best].getBoundingClientRect();
+    var bl = rr.left - ir.left, bt = rr.top - ir.top;
+    var rel = pts.map(function (p) {
+      return [
+        Math.round((p.x - bl) / rr.width * 1000) / 10,
+        Math.round((p.y - bt) / rr.height * 1000) / 10
+      ];
+    });
+    var list = (card.annot || []).slice();
+    list.push({ id: anId(), k: 'ink', blk: best, c: 'r', pts: rel, at: nowStamp() });
+    clearInkCanvas();
+    persistAnnots(card, list, '笔画已保存');
+  }
+
+  function toggleDraw(on) {
+    drawMode = (on === undefined) ? !drawMode : !!on;
+    document.body.classList.toggle('draw-mode', drawMode);
+    var btn = $('#btnDraw');
+    if (btn) btn.classList.toggle('on', drawMode);
+    closeAnBar();
+    pendingSel = null;
+    var s = window.getSelection();
+    if (s) s.removeAllRanges();
+    if (drawMode) {
+      buildInkCanvas();
+      toast('画笔已打开：直接在正文上圈画，松开就保存', 'ok');
+    } else {
+      destroyInkCanvas();
+    }
+  }
+
+  /* ---------------- 选中文字 → 浮出工具条 ---------------- */
+  function onTextPickUp() {
+    if (drawMode) return;
+    setTimeout(function () {
+      var cap = captureSelection();
+      if (!cap) { closeAnBar(); return; }
+      var sel = window.getSelection();
+      if (!sel || !sel.rangeCount) return;
+      showAnBar(cap, sel.getRangeAt(0).getBoundingClientRect());
+    }, 12);
   }
 
   /* ---------------- 导入 .md 文件 ---------------- */
@@ -1890,6 +2328,48 @@
       if (a && /^https?:/i.test(a.getAttribute('href') || '')) { a.target = '_blank'; a.rel = 'noreferrer'; }
     });
     $('#lightbox').addEventListener('click', function () { this.hidden = true; this.querySelector('img').src = ''; });
+
+    // —— 批注：选中文字浮出工具条，点已有标记可改色 / 加备注 / 取消 ——
+    var rbody = $('#readerBody');
+    ['mouseup', 'touchend'].forEach(function (ev) {
+      rbody.addEventListener(ev, onTextPickUp);
+    });
+    rbody.addEventListener('click', function (e) {
+      if (window.getSelection().toString()) return;   // 正在选字，别弹菜单
+      var m = e.target.closest('mark.an-mark');
+      if (m) { openAnnotMenu(m); return; }
+      var ink = e.target.closest('.an-ink');
+      if (ink) openAnnotMenu(ink);
+    });
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest && e.target.closest('.an-bar button');
+      if (btn) {
+        var card = reader.card;
+        if (!card) return;
+        if (btn.dataset.color) { addHighlight(card, btn.dataset.color, ''); return; }
+        var act = btn.dataset.act;
+        if (act === 'cancel') {
+          pendingSel = null;
+          closeAnBar();
+          var s = window.getSelection();
+          if (s) s.removeAllRanges();
+        } else if (act === 'note') {
+          var v = prompt('给这段加个备注（留空就只高亮）：', '');
+          if (v === null) return;
+          addHighlight(card, 'y', v.trim());
+        }
+        return;
+      }
+      if (anBar && !anBar.contains(e.target)) { closeAnBar(); pendingSel = null; }
+    });
+
+    // 画笔开关
+    var drawBtn = $('#btnDraw');
+    if (drawBtn) drawBtn.addEventListener('click', function () { toggleDraw(); });
+    // 窗口宽度变了，canvas 得按新高度重建（不然笔迹会错位到画布外）
+    window.addEventListener('resize', function () {
+      if (drawMode) buildInkCanvas();
+    });
 
     // 编辑弹窗
     $('#btnModalClose').addEventListener('click', function () { closeEditor(); });
